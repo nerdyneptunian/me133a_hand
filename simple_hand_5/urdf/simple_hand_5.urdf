@@ -44,7 +44,29 @@
       </geometry>
     </collision>
   </link>
+  
   <link
+    name = "t1_p_r2">
+  </link>
+
+
+
+  
+  <joint
+    name="thumb_palm"
+    type="continuous">
+    <origin
+      xyz="-0.031 0 -0.0115"
+      rpy="1.5708 -1.5232 -1.5708" />
+    <parent
+      link="base_link" />
+    <child
+      link="t1_p_r2" />
+    <axis
+      xyz="0.99887 0.047565 0" />
+  </joint>
+
+<link
     name="thumb_1">
     <inertial>
       <origin
@@ -84,19 +106,22 @@
       </geometry>
     </collision>
   </link>
+
+
   <joint
-    name="thumb_palm"
+    name="thumb_palm_updown"
     type="continuous">
     <origin
-      xyz="-0.031 0 -0.0115"
-      rpy="1.5708 -1.5232 -1.5708" />
+      xyz="0 0 0"
+      rpy="0 0 0" />
     <parent
-      link="base_link" />
-    <child
+      link="t1_p_r2" />
+    <child 
       link="thumb_1" />
     <axis
-      xyz="0.99887 0.047565 0" />
+      xyz = "0 0 1" />
   </joint>
+
   <link
     name="thumb_2">
     <inertial>
