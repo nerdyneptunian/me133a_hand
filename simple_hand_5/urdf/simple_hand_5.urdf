@@ -54,7 +54,7 @@
   
   <joint
     name="thumb_palm"
-    type="continuous">
+    type="revolute">
     <origin
       xyz="-0.031 0 -0.0115"
       rpy="1.5708 -1.5232 -1.5708" />
@@ -64,6 +64,11 @@
       link="t1_p_r2" />
     <axis
       xyz="0.99887 0.047565 0" />
+    <limit
+      lower = "0"
+      upper = "3.14159"
+      effort="0"
+      velocity="0" />
   </joint>
 
 <link
@@ -110,7 +115,7 @@
 
   <joint
     name="thumb_palm_updown"
-    type="continuous">
+    type="revolute">
     <origin
       xyz="0 0 0"
       rpy="0 0 0" />
@@ -120,6 +125,11 @@
       link="thumb_1" />
     <axis
       xyz = "0 0 1" />
+    <limit
+      lower = "-1.5708"
+      upper = "0"
+      effort="0"
+      velocity="0" />
   </joint>
 
   <link
@@ -164,7 +174,7 @@
   </link>
   <joint
     name="thumb_12"
-    type="continuous">
+    type="revolute">
     <origin
       xyz="0.024224 0.0052935 0.025382"
       rpy="0.85599 0.59602 1.2791" />
@@ -174,6 +184,11 @@
       link="thumb_2" />
     <axis
       xyz="1 0 0" />
+    <limit
+      lower = "0"
+      upper = "1.7"
+      effort="0"
+      velocity="0" />
   </joint>
   <link
     name="thumb_3">
@@ -217,7 +232,7 @@
   </link>
   <joint
     name="thumb_23"
-    type="continuous">
+    type="revolute">
     <origin
       xyz="-0.00021585 -0.0073345 0.025772"
       rpy="0.26232 0.045694 -0.1685" />
@@ -227,6 +242,11 @@
       link="thumb_3" />
     <axis
       xyz="1 0 0" />
+    <limit
+      lower = "0"
+      upper = "1.5708"
+      effort="0"
+      velocity="0" />
   </joint>
   <link
     name="index_1">
@@ -270,7 +290,7 @@
   </link>
   <joint
     name="index_palm"
-    type="continuous">
+    type="revolute">
     <origin
       xyz="-0.0299 -0.000100000000000094 0.0385"
       rpy="0 0 0" />
@@ -280,6 +300,11 @@
       link="index_1" />
     <axis
       xyz="1 0 0" />
+    <limit
+      lower = "0"
+      upper = "1.5708"
+      effort="0"
+      velocity="0" />
   </joint>
   <link
     name="index_2">
@@ -323,7 +348,7 @@
   </link>
   <joint
     name="index_12"
-    type="continuous">
+    type="revolute">
     <origin
       xyz="-0.000199999999999954 0 0.03"
       rpy="0 0 0" />
@@ -333,6 +358,11 @@
       link="index_2" />
     <axis
       xyz="1 0 0" />
+    <limit
+      lower = "0"
+      upper = "1.5708"
+      effort="0"
+      velocity="0" />
   </joint>
   <link
     name="index_3">
@@ -376,7 +406,7 @@
   </link>
   <joint
     name="index_23"
-    type="fixed">
+    type="revolute">
     <origin
       xyz="0 0 0.03"
       rpy="0 0 0" />
@@ -385,7 +415,12 @@
     <child
       link="index_3" />
     <axis
-      xyz="0 0 0" />
+      xyz="1 0 0" />
+    <limit
+      lower = "0"
+      upper = "1.5708"
+      effort="0"
+      velocity="0" />
   </joint>
   <link
     name="middle_1">
@@ -429,7 +464,7 @@
   </link>
   <joint
     name="middle_palm"
-    type="continuous">
+    type="revolute">
     <origin
       xyz="-0.0104 9.99999999997445E-05 0.0435"
       rpy="0 0 0" />
@@ -439,6 +474,11 @@
       link="middle_1" />
     <axis
       xyz="1 0 0" />
+    <limit
+      lower = "0"
+      upper = "1.5708"
+      effort="0"
+      velocity="0" />
   </joint>
   <link
     name="middle_2">
@@ -493,8 +533,8 @@
     <axis
       xyz="1 0 0" />
     <limit
-      lower="-1.5708"
-      upper="0"
+      lower="0"
+      upper="1.5708"
       effort="0"
       velocity="0" />
   </joint>
@@ -540,7 +580,7 @@
   </link>
   <joint
     name="middle_23"
-    type="fixed">
+    type="revolute">
     <origin
       xyz="-0.0002 0 0.03"
       rpy="0 0 0" />
@@ -549,7 +589,12 @@
     <child
       link="middle_3" />
     <axis
-      xyz="0 0 0" />
+      xyz="1 0 0" />
+    <limit
+      lower = "0"
+      upper = "1.5708"
+      effort="0"
+      velocity="0" />
   </joint>
   <link
     name="ring_pinky_extra">
@@ -646,7 +691,7 @@
   </link>
   <joint
     name="ring_rp"
-    type="continuous">
+    type="revolute">
     <origin
       xyz="-0.00835527166225281 0 0.0211859535805005"
       rpy="0 0.08726646259971 0" />
@@ -656,6 +701,11 @@
       link="ring_1" />
     <axis
       xyz="1 0 0" />
+    <limit
+      lower = "0"
+      upper = "1.5708"
+      effort="0"
+      velocity="0" />
   </joint>
   <link
     name="ring_2">
@@ -699,7 +749,7 @@
   </link>
   <joint
     name="ring_12"
-    type="continuous">
+    type="revolute">
     <origin
       xyz="0 0 0.03"
       rpy="0 0 0" />
@@ -709,6 +759,11 @@
       link="ring_2" />
     <axis
       xyz="1 0 0" />
+    <limit
+      lower = "0"
+      upper = "1.5708"
+      effort="0"
+      velocity="0" />
   </joint>
   <link
     name="ring_3">
@@ -752,7 +807,7 @@
   </link>
   <joint
     name="ring_23"
-    type="fixed">
+    type="revolute">
     <origin
       xyz="0.000199999999999961 -0.000199999999999982 0.03"
       rpy="0 0 0" />
@@ -761,7 +816,12 @@
     <child
       link="ring_3" />
     <axis
-      xyz="0 0 0" />
+      xyz="1 0 0" />
+    <limit
+      lower = "0"
+      upper = "1.5708"
+      effort="0"
+      velocity="0" />
   </joint>
   <link
     name="pinky_1">
@@ -805,7 +865,7 @@
   </link>
   <joint
     name="pinky_rp"
-    type="continuous">
+    type="revolute">
     <origin
       xyz="0.00975174070266939 0 0.0184546186727577"
       rpy="0 0.261799387799152 0" />
@@ -815,6 +875,11 @@
       link="pinky_1" />
     <axis
       xyz="1 0 0" />
+    <limit
+      lower = "0"
+      upper = "1.5708"
+      effort="0"
+      velocity="0" />
   </joint>
   <link
     name="pinky_2">
@@ -858,7 +923,7 @@
   </link>
   <joint
     name="pinky_12"
-    type="continuous">
+    type="revolute">
     <origin
       xyz="-0.000200000000001081 0.000199999999998815 0.0299999999999998"
       rpy="0 0 0" />
@@ -868,6 +933,11 @@
       link="pinky_2" />
     <axis
       xyz="1 0 0" />
+    <limit
+      lower = "0"
+      upper = "1.5708"
+      effort="0"
+      velocity="0" />
   </joint>
   <link
     name="pinky_3">
@@ -911,7 +981,7 @@
   </link>
   <joint
     name="pinky_23"
-    type="fixed">
+    type="revolute">
     <origin
       xyz="0 0 0.0267500000000002"
       rpy="0 0 0" />
@@ -920,6 +990,11 @@
     <child
       link="pinky_3" />
     <axis
-      xyz="0 0 0" />
+      xyz="1 0 0" />
+    <limit
+      lower = "0"
+      upper = "1.5708"
+      effort="0"
+      velocity="0" />
   </joint>
 </robot>
