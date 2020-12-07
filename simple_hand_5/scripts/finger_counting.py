@@ -101,8 +101,8 @@ def etip(p, pd, R, Rd):
                  np.cross(R[:,1], Rd[:,1]) +
                  np.cross(R[:,2], Rd[:,2]))
     eR  = np.matrix.transpose(np.atleast_2d(eR1))
-    return np.vstack((ep,eR))
-
+    # return np.vstack((ep,eR))  Add this back in if doing rotation orientations as well
+    return ep
 
 # Cubic Function Coefficient Calculator
 #
@@ -119,7 +119,17 @@ def cubic_coeff(dt, p0, pf, v0, vf):
 	coeff = Yinv @ np.array([[p0], [pf], [v0], [vf]])
 	return coeff
 
+def desired_path(t, dt, p0, pgoal):
+	c_t_x = cubic_coeff(dt, p0[0], pgoal[0], 0, 0)
+	c_t_y = cubic_coeff(dt, p0[1], pgoal[1], 0, 0)
+	c_t_z = cubic_coeff(dt, p0[2], pgoal[2], 0, 0)
 
+	coeffMat = np.array([c_t_x, c_t_y, c_t_z])
+
+	pd = np.array([1, t, t**2, t**3]) @ coeffMat
+	vd = np.array([0, 1, 2*t, 3*t**2]) @ coeffMat
+
+	return (pd, vd)
 
 #
 #  Main Code
@@ -225,4 +235,145 @@ theta_tp = np.array([[1.41], [-1.07], [0.14], [0.13],
 					 [0.69], [1.17], [1.03]])
 
 
+theta_start = np.zeros(pub.dofs(), 1)
+
+# Find all the positions for an open hand
+
+
+
+
+
+
+
+
+
+#
+# Pseudo Code for testing
+#
+
+
+
+	while not rospy.is_shutdown():
+		th_thumb = theta[0:3, :]
+		th_index = theta[4:6, :]
+		th_middle = theta[7:9, :]
+		th_ring = theta[10:13, :]
+		th_pinky = np.array([[theta[10], theta[14:16]]])
+
+		# Update the locations of each tip
+		kin_thumb.fkin(th_thumb, p_thumb, R_thumb)
+		kin_index.fkin(th_index, p_index, R_index)
+		kin_middle.fkin(th_middle, p_middle, R_middle)
+		kin_ring.fkin(th_ring, p_ring, R_ring)
+		kin_pinky.fkin(th_pinky, p_pinky, R_pinky)
+
+		# Calculate all the errors from the previous step:
+
+		e_thumb = etip(p_thumb, pd_thumb, R_thumb, Rd_thumb)
+		e_index = etip(p_index, pd_index, R_index, Rd_index)
+		e_middle = etip(p_middle, pd_middle, R_middle, Rd_middle)
+		e_ring = etip(p_ring, pd_ring, R_ring, Rd_ring)
+		e_pinky = etip(p_pinky, pd_pinky, R_pinky, Rd_pinky)
+
+		# Read some input, either of thumb position + closed state, or just what number to be achieved
+
+		# TODO: Set up subscriber to a gui? 
+			# Would want the gui to not constantly send messages, but only send a message when 
+			# a button is pressed like enter to send message
+			# Inputs from gui:
+				# Current position of thumb? (let person move thumb in designated x, y, z way)
+				# Whether open or close finger count
+				# 
+				# OR
+				#
+				# Current position of thumb?
+				# What number to go to?
+
+		# From message, determine which finger to close (if closed == true)
+			# If 1st option, determine what the closest finger is to close with thumb
+			
+		#	if condition open vs. closed changed:
+				p_t0 = p_thumb
+				p_i0 = p_index
+				p_m0 = p_middle
+				p_r0 = p_ring
+				p_p0 = p_pinky
+
+				#TBH all the index through pinky fingers are likely going to have p_x0 be open or closed
+ 				
+ 				p_thumb_goal = p_thumb_open
+				p_index_goal = p_index_open
+				p_middle_goal = p_middle_open
+				p_ring_goal = p_ring_open
+				p_pinky_goal = p_pinky_open
+
+
+			# if closed && 9
+				p_thumb_goal = p_thumb_ti
+				p_index_goal = p_index_ti
+
+			# else if closed && 8
+				p_thumb_goal = p_thumb_tmn
+				p_middle_goal = p_middle_tm
+
+			# else if closed && 7
+				p_thumb_goal = p_thumb_tr
+				p_ring_goal = p_ring_tr
+
+			# else if closed && 6
+				p_thumb_goal = p_thumb_tp
+				p_pinky_goal = p_pinky_tp
+
+		# Now that we have all the goals, we can calculate the desired positions
+
+		(pd_thumb, vd_thumb) = desired(t, total_t, p_t0, p_thumb_goal)
+		(pd_index, vd_index) = desired(t, total_t, p_i0, p_index_goal)
+		(pd_middle, vd_middle) = desired(t, total_t, p_m0, p_middle_goal)
+		(pd_ring, vd_ring) = desired(t, total_t, p_r0, p_ring_goal)
+		(pd_pinky, vd_pinky) = desired(t, total_t, p_r0, p_ring_goal)
+
+		# From these desired positions and velocities, we can probably get:
+
+		# Calculate thetas for the thumb position
+		vr_thumb = vd_thumb + lam * e_thumb   # 3 x 1 column vector
+		Jv_thumb = J_thumb[0:2, :]      # 3 x dofs matrix
+		Jvinv_thumb = np.linalg.pinv(Jv_thumb) # dofs x 3 matrix
+		theta_dot_thumb = Jvinv_thumb @ vr_thumb     # dofs x 1 column vector
+		theta_thumb = theta_dot_thumb * dt     # theta_palm, theta_palm_updown, theta_12, theta_23
+
+		# Calculate thetas for index position
+		vr_index = vd_index + lam * e_index   # 3 x 1 column vector
+		Jv_index = J_index[0:2, :]      # 3 x dofs matrix
+		Jvinv_index = np.linalg.pinv(Jv_index) # dofs x 3 matrix
+		theta_dot_index = Jvinv_index @ vr_index     # dofs x 1 column vector
+		theta_index = theta_dot_index * dt     # index_palm, index_12, index_23
+
+		# Calculate thetas for middle position
+		vr_middle = vd_middle + lam * e_middle   # 3 x 1 column vector
+		Jv_middle = J_middle[0:2, :]      # 3 x dofs matrix
+		Jvinv_middle = np.linalg.pinv(Jv_middle) # dofs x 3 matrix
+		theta_dot_middle = Jvinv_middle @ vr_middle     # dofs x 1 column vector
+		theta_middle = theta_dot_middle * dt     # middle_palm, middle_12, middle_23
+
+		# Calculate thetas for ring position
+		vr_ring = vd_ring + lam * e_ring   # 3 x 1 column vector
+		Jv_ring = J_ring[0:2, :]      # 3 x dofs matrix
+		Jvinv_ring = np.linalg.pinv(Jv_ring) # dofs x 3 matrix
+		theta_dot_ring = Jvinv_ring @ vr_ring     # dofs x 1 column vector
+		theta_ring = theta_dot_ring * dt     # rp_palm, ring_rp, ring_12, ring_23
+
+		# Calculate thetas for pinky position
+		vr_pinky = vd_pinky + lam * e_pinky   # 3 x 1 column vector
+		Jv_pinky = J_pinky[0:2, :]      # 3 x dofs matrix
+		Jvinv_pinky = np.linalg.pinv(Jv_pinky) # dofs x 3 matrix
+		theta_dot_pinky = Jvinv_pinky @ vr_pinky     # dofs x 1 column vector
+		theta_pinky = theta_dot_pinky * dt     # rp_palm, pinky_rp, pinky_12, pinky_23
+
+
+		# NOTE: RIGHT NOW RP_PALM IS IN BOTH THE PINKY BEND AND THE RING FINGER BEND.
+		# THIS MAY NOT BE AN ISSUE ARE RIGHT NOW RP_PALM IS BEING TREATED AS FIXED, BUT IF 
+		# WE ACTUALLY FIXED THIS JOINT THEN WE MAY AVOID ERRORS. FOR NOW, WE'RE GOING TO ASSUME IT 
+		# AS BEING FIXED, ST. theta_pinky[0] == theta_ring[0]
+
+		theta = np.vstack((theta_thumb, theta_index, theta_middle, theta_ring, theta_pinky[1:N_pinky-1]))
 
