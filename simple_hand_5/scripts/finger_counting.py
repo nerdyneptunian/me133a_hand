@@ -149,7 +149,7 @@ if __name__ == "__main__":
     rospy.loginfo("Running with a loop dt of %f seconds (%fHz)" %
                   (dt, rate))
 
-    # Set up the kinematics, from world to tip.
+    # Set up the kinematics, from world to filange tips.
     urdf = rospy.get_param('/robot_description')
     kin_thumb  = Kinematics(urdf, 'base_link', 'thumb_3')
     N_thumb    = kin_thumb.dofs()
@@ -173,22 +173,39 @@ if __name__ == "__main__":
     p_thumb = np.zeros((3,1))
     R_thumb = np.identity(3)
     J_thumb = np.zeros((6,N_thumb))
+    p_thumb_open = np.zeros((3,1))
+    R_thumb_open = identity(3)
+    theta_thumb_open = np.zeros((N_thumb,1))
 
     p_index = np.zeros((3,1))
     R_index = np.identity(3)
     J_index = np.zeros((6,N_index))
+    p_index_open = np.zeros((3,1))
+    R_index_open = identity(3)
+    theta_index_open = np.zeros((N_index,1))
 
     p_middle = np.zeros((3,1))
     R_middle = np.identity(3)
     J_middle = np.zeros((6,N_middle))
+    p_middle_open = np.zeros((3,1))
+    R_middle_open = identity(3)
+    theta_middle_open = np.zeros((N_middle,1))
 
     p_ring = np.zeros((3,1))
     R_ring = np.identity(3)
     J_ring = np.zeros((6,N_ring))
+    p_ring_open = np.zeros((3,1))
+    R_ring_open = identity(3)
+    theta_ring_open = np.zeros((N_ring,1))
 
     p_pinky = np.zeros((3,1))
     R_pinky = np.identity(3)
     J_pinky = np.zeros((6,N_pinky))
+    p_pinky_open = np.zeros((3,1))
+    R_pinky_open = identity(3)
+    theta_pinky_open = np.zeros((N_pinky,1))
+    
+
 
     # Set up the publisher, naming the joints!
     pub = JointStatePublisher(('thumb_palm', 'thumb_palm_updown', 'thumb_12', 'thumb_23',
@@ -198,7 +215,7 @@ if __name__ == "__main__":
                                'pinky_rp', 'pinky_12', 'pinky_23'))
 
     # Make sure the URDF and publisher agree in dimensions.
-    if not pub.dofs() == N_thumb + N_index + N_ring + N_pinky - 1:
+    if not pub.dofs() == N_thumb + N_index + N_ring + N_pinky +N_middle - 1:
         rospy.logerr("FIX Publisher to agree with URDF!")
 
     # Set the numpy printing options (as not to be overly confusing).
@@ -209,26 +226,25 @@ if __name__ == "__main__":
 # Close finger positions
 # Used fkin to establish the closed positions to calculate errors/know where you are aiming for in the task space
 
-
-theta_ti = np.array([[1.51], [0], [0.11], [0.18],
+theta_ti = np.array([[1.51], [0], [0.11], [0.18], # for number 9
 					 [0], [0.87], [1.42], 
 					 [0], [0], [0], 
 					 [0], [0], [0], [0],
 					 [0], [0], [0]])
 
-theta_tm = np.array([[1.12], [-0.38], [0.27], [0.31]
+theta_tm = np.array([[1.12], [-0.38], [0.27], [0.31] # for number 8
 					 [0], [0], [0],
 					 [0], [1.31], [1.16],
 					 [0], [0], [0], [0],
 					 [0], [0], [0]])
 
-theta_tr = np.array([[1.19], [-0.91], [0.20], [0.30]
+theta_tr = np.array([[1.19], [-0.91], [0.20], [0.30] # for number 7
 					 [0], [0], [0],
 					 [0], [0], [0],
 					 [0], [0.42], [1.33], [1.09],
 					 [0], [0], [0]])
 
-theta_tp = np.array([[1.41], [-1.07], [0.14], [0.13],
+theta_tp = np.array([[1.41], [-1.07], [0.14], [0.13], # for number 6
 					 [0], [0], [0],
 					 [0], [0], [0],
 					 [0], [0], [0], [0],
@@ -237,20 +253,20 @@ theta_tp = np.array([[1.41], [-1.07], [0.14], [0.13],
 
 theta_start = np.zeros(pub.dofs(), 1)
 
-# Find all the positions for an open hand
+# Open hand positions
 
-
-
-
-
-
-
+kin_thumb.fkin(theta_thumb_open, p_thumb_open, R_thumb_open)
+kin_index.fkin(theta_index_open, p_index_open, R_index_open)
+kin_middle.fkin(theta_middle_open, p_middle_open, R_middle_open)
+kin_ring.fkin(theta_ring_open, p_ring_open, R_ring_open)
+kin_pinky.fkin(theta_pinky_open, p_pinky_open, R_pinky_open)
 
 
 #
 # Pseudo Code for testing
 #
 
+# Should add the -1 trick when we have the opportunity
 
 
 	while not rospy.is_shutdown():
@@ -291,56 +307,92 @@ theta_start = np.zeros(pub.dofs(), 1)
 
 		# From message, determine which finger to close (if closed == true)
 			# If 1st option, determine what the closest finger is to close with thumb
+	    # in the meantime, we'll just make this a state variable:
+	   
+
+	    h_open = 0
+	    h_close = 1
+	    h_free = 2
+	    
+
+	    desiredNum = 6
+	    handState = h_free
+
+
+
+	    
 			
 		#	if condition open vs. closed changed:
-				p_t0 = p_thumb
-				p_i0 = p_index
-				p_m0 = p_middle
-				p_r0 = p_ring
-				p_p0 = p_pinky
+		# check if we need to do any motion- aka if close or free
+		
+		if handState == h_free:
+		    p_i0 = p_index
+			p_m0 = p_middle
+			p_r0 = p_ring
+			p_p0 = p_pinky
 
-				#TBH all the index through pinky fingers are likely going to have p_x0 be open or closed
- 				
- 				p_thumb_goal = p_thumb_open
-				p_index_goal = p_index_open
-				p_middle_goal = p_middle_open
-				p_ring_goal = p_ring_open
-				p_pinky_goal = p_pinky_open
+			p_index_goal = p_index_open
+			p_middle_goal = p_middle_open
+			p_ring_goal = p_ring_open
+			p_pinky_goal = p_pinky_open
+
+			kin_thumb.fkin(thumbInputJoints,theta_thumb)
+			# placeholder vector rn until we have a gui/something to give us the join states
+		    thumbInput = vec(1,-1,1,1)
+			theta_thumb = thumbInput
 
 
-			# if closed && 9
-				p_thumb_goal = p_thumb_ti
-				p_index_goal = p_index_ti
+		else:
+	        # set our initial positions
+			p_t0 = p_thumb
+			p_i0 = p_index
+			p_m0 = p_middle
+			p_r0 = p_ring
+			p_p0 = p_pinky
 
-			# else if closed && 8
-				p_thumb_goal = p_thumb_tmn
-				p_middle_goal = p_middle_tm
+			#TBH all the index through pinky fingers are likely going to have p_x0 be open or closed
+				# make the goal to be open positions (need to define these)
+			p_thumb_goal = p_thumb_open
+			p_index_goal = p_index_open
+			p_middle_goal = p_middle_open
+			p_ring_goal = p_ring_open
+			p_pinky_goal = p_pinky_open
 
-			# else if closed && 7
-				p_thumb_goal = p_thumb_tr
-				p_ring_goal = p_ring_tr
+            if handState == h_close:
+                if desiredNum == 9:
+                # if closed && 9
+                    p_thumb_goal = p_thumb_ti
+			        p_index_goal = p_index_ti
+		
+			    elif desiredNum == 8:
+                # else if closed && 8
+			        p_thumb_goal = p_thumb_tmn
+			        p_middle_goal = p_middle_tm
+			    elif desiredNum == 7:
+			    # else if closed && 7
+			        p_thumb_goal = p_thumb_tr
+			        p_ring_goal = p_ring_tr
+			    elif desiredNum == 6:
+			    # else if closed && 6
+			        p_thumb_goal = p_thumb_tp
+			        p_pinky_goal = p_pinky_tp
+			# because the free doesn't touch the thumb at all, we're going to put it here
+			(pd_thumb, vd_thumb) = desired(t, total_t, p_t0, p_thumb_goal)
+			# Calculate thetas for the thumb position
+			vr_thumb = vd_thumb + lam * e_thumb   # 3 x 1 column vector
+			Jv_thumb = J_thumb[0:2, :]      # 3 x dofs matrix
+			Jvinv_thumb = np.linalg.pinv(Jv_thumb) # dofs x 3 matrix
+			theta_dot_thumb = Jvinv_thumb @ vr_thumb     # dofs x 1 column vector
+			theta_thumb = theta_dot_thumb * dt     # theta_palm, theta_palm_updown, theta_12, theta_23
+			
+        # Now that we have all the goals, we can calculate the desired positions (besides the thumb)
 
-			# else if closed && 6
-				p_thumb_goal = p_thumb_tp
-				p_pinky_goal = p_pinky_tp
-
-		# Now that we have all the goals, we can calculate the desired positions
-
-		(pd_thumb, vd_thumb) = desired(t, total_t, p_t0, p_thumb_goal)
 		(pd_index, vd_index) = desired(t, total_t, p_i0, p_index_goal)
 		(pd_middle, vd_middle) = desired(t, total_t, p_m0, p_middle_goal)
 		(pd_ring, vd_ring) = desired(t, total_t, p_r0, p_ring_goal)
 		(pd_pinky, vd_pinky) = desired(t, total_t, p_r0, p_ring_goal)
 
 		# From these desired positions and velocities, we can probably get:
-
-		# Calculate thetas for the thumb position
-		vr_thumb = vd_thumb + lam * e_thumb   # 3 x 1 column vector
-		Jv_thumb = J_thumb[0:2, :]      # 3 x dofs matrix
-		Jvinv_thumb = np.linalg.pinv(Jv_thumb) # dofs x 3 matrix
-		theta_dot_thumb = Jvinv_thumb @ vr_thumb     # dofs x 1 column vector
-		theta_thumb = theta_dot_thumb * dt     # theta_palm, theta_palm_updown, theta_12, theta_23
-
 		# Calculate thetas for index position
 		vr_index = vd_index + lam * e_index   # 3 x 1 column vector
 		Jv_index = J_index[0:2, :]      # 3 x dofs matrix
