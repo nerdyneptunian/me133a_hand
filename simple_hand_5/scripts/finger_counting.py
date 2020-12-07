@@ -131,6 +131,16 @@ def desired_path(t, dt, p0, pgoal):
 
 	return (pd, vd)
 
+def plane_proximity(pos, plane):
+	d = np.abs(plane[0]*pos[0] + plane[1]*pos[1] + \
+		plane[2]*pos[2] + plane[3])/np.sqrt(plane[0]**2 + \
+		plane[1]**2 + plane[2]**2)
+	return(d)
+
+def plane_vec(point1, point2, point3):
+	
+
+
 #
 #  Main Code
 #
