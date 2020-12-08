@@ -305,6 +305,9 @@ if __name__ == "__main__":
     pinky_plane = plane_vec(p_pinky_open, vec(0.0441, -0.0613, 0.0542), \
         vec(0.0284, -0.0656, 0.0137))
 
+# For the initial desired, head to the starting position (t=0).
+# Clear the velocities, just to be sure.
+
 #
 # Pseudo Code for testing
 #
@@ -321,9 +324,9 @@ if __name__ == "__main__":
         th_index = theta[4:7, :]
         th_middle = theta[7:10, :]
         th_ring = theta[10:14, :]
-        th_pinky = np.zeros((3,1))
+        th_pinky = np.zeros((4,1))
         th_pinky[0,:] = theta[10,:]
-        th_pinky[1:4,:] = theta[14:17,:]
+        th_pinky[1:,:] = theta[14:17,:]
 
         # Update the locations of each tip
         kin_thumb.fkin(th_thumb, p_thumb, R_thumb)
