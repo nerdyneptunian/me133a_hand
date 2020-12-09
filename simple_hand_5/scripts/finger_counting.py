@@ -241,7 +241,7 @@ if __name__ == "__main__":
                                'pinky_rp', 'pinky_12', 'pinky_23'))
 
     # Make sure the URDF and publisher agree in dimensions.
-    if not pub.dofs() == N_thumb + N_index + N_ring + N_pinky +N_middle - 1:
+    if not pub.dofs() == N_thumb + N_index + N_ring + N_pinky + N_middle - 1:
         rospy.logerr("FIX Publisher to agree with URDF!")
 
     # Set the numpy printing options (as not to be overly confusing).
@@ -279,9 +279,6 @@ if __name__ == "__main__":
                          [0], [0], [0],
                          [0], [0], [0], [0],
                          [0.69], [1.17], [1.03]])
-
-
-    # theta_start = np.zeros(pub.dofs(), 1) # im not sure what this is for?
 
     # Open hand positions
 
@@ -473,11 +470,10 @@ if __name__ == "__main__":
         theta_pinky = theta_dot_pinky * dt     # rp_palm, pinky_rp, pinky_12, pinky_23
 
 
-        # NOTE: RIGHT NOW RP_PALM IS IN BOTH THE PINKY BEND AND THE RING FINGER BEND.
-        # THIS MAY NOT BE AN ISSUE ARE RIGHT NOW RP_PALM IS BEING TREATED AS FIXED, BUT IF 
-        # WE ACTUALLY FIXED THIS JOINT THEN WE MAY AVOID ERRORS. FOR NOW, WE'RE GOING TO ASSUME IT 
-        # AS BEING FIXED, ST. theta_pinky[0] == theta_ring[0]
+        if desiredNum ==6:
+            theta = np.vstack((theta_thumb, theta_index, theta_middle, theta_ring[1:N_ring], theta_pinky))
+        else:
+            theta = np.vstack((theta_thumb, theta_index, theta_middle, theta_ring, theta_pinky[1:N_pinky]))
 
-        theta = np.vstack((theta_thumb, theta_index, theta_middle, theta_ring, theta_pinky[1:N_pinky-1]))
         pub.send(theta)
         servo.sleep()
