@@ -111,26 +111,26 @@ def etip(p, pd):
 # and position and velocity values pf and vf at time tf and
 # returns the four coefficients for the function.
 
-def cubic_coeff(dt, p0, pf, v0, vf):
-    Y  = np.array([[1, 0 , 0    , 0     ], 
-                   [0, 1 , 0    , 0     ],
-                   [1, dt, dt**2, dt**3 ], 
-                   [0, 1 , 2*dt , 2*dt**2]] )
-    Yinv = np.linalg.pinv(Y)
-    coeff = Yinv @ np.array([p0, pf, v0, vf])
-    return coeff
+# def cubic_coeff(dt, p0, pf, v0, vf):
+#     Y  = np.array([[1, 0 , 0    , 0     ], 
+#                    [0, 1 , 0    , 0     ],
+#                    [1, dt, dt**2, dt**3 ], 
+#                    [0, 1 , 2*dt , 3*dt**2]] )
+#     Yinv = np.linalg.pinv(Y)
+#     coeff = Yinv @ np.array([p0, pf, v0, vf])
+#     return coeff
 
-def desired_path(t, dt, p0, pgoal):
-    c_t_x = cubic_coeff(dt, p0[0], pgoal[0], np.array([0]), np.array([0]))
-    c_t_y = cubic_coeff(dt, p0[1], pgoal[1], np.array([0]), np.array([0]))
-    c_t_z = cubic_coeff(dt, p0[2], pgoal[2], np.array([0]), np.array([0]))
+# def desired_path(t, dt, p0, pgoal):
+#     c_t_x = cubic_coeff(dt, p0[0], pgoal[0], np.array([0]), np.array([0]))
+#     c_t_y = cubic_coeff(dt, p0[1], pgoal[1], np.array([0]), np.array([0]))
+#     c_t_z = cubic_coeff(dt, p0[2], pgoal[2], np.array([0]), np.array([0]))
 
-    coeffMat = np.array([c_t_x, c_t_y, c_t_z])
+#     coeffMat = np.array([c_t_x, c_t_y, c_t_z])
 
-    pd = np.array([1, t, t**2, t**3]) @ coeffMat
-    vd = np.array([0, 1, 2*t, 3*t**2]) @ coeffMat
+#     pd = np.array([1, t, t**2, t**3]) @ coeffMat
+#     vd = np.array([0, 1, 2*t, 3*t**2]) @ coeffMat
 
-    return (pd, vd)
+#     return (pd, vd)
 
 def plane_proximity(pos, plane):
     # this takes in a position and plane vector and returns the distance between
@@ -266,6 +266,7 @@ if __name__ == "__main__":
     p_index_ti = np.zeros((3,1))
     p_thumb_ti = np.zeros((3,1))
     kin_index.fkin(theta_ti, p_index_ti, R_index)
+
     kin_thumb.fkin(theta_ti, p_thumb_ti, R_thumb)
     
     # for number 8
@@ -416,7 +417,7 @@ if __name__ == "__main__":
         # check if we need to do any motion- aka if close or free
         
         if handState == h_free:
-            p_i0 = p_index
+            p_i0 = p_index # i think we may want to make these open instead
             p_m0 = p_middle
             p_r0 = p_ring
             p_p0 = p_pinky
@@ -452,6 +453,7 @@ if __name__ == "__main__":
                 # if closed && 9
                     p_thumb_goal = p_thumb_ti
                     p_index_goal = p_index_ti
+                    print(p_index_ti)
         
                 elif desiredNum == 8:
                 # else if closed && 8
@@ -466,7 +468,7 @@ if __name__ == "__main__":
                     p_thumb_goal = p_thumb_tp
                     p_pinky_goal = p_pinky_tp
             # because the free doesn't touch the thumb at all, we're going to put it here
-            (pd_thumb, vd_thumb) = desired_path(t, total_t, p_t0, p_thumb_goal)
+            (pd_thumb, vd_thumb) = desired_path(t, dt, p_t0, p_thumb_goal)
             # Calculate thetas for the thumb position
             vr_thumb = vd_thumb + lam * e_thumb   # 3 x 1 column vector
             Jv_thumb = J_thumb[0:3, :]      # 3 x dofs matrix
@@ -477,7 +479,7 @@ if __name__ == "__main__":
             
         # Now that we have all the goals, we can calculate the desired positions (besides the thumb)
 
-        (pd_index, vd_index) = desired_path(t, total_t, p_i0, p_index_goal)
+        (pd_index, vd_index) = desired_path(t, total_t, p_index_open, p_index_goal) #test with open instead
         #print("v index: ", vd_index) nonzero
         (pd_middle, vd_middle) = desired_path(t, total_t, p_m0, p_middle_goal)
         (pd_ring, vd_ring) = desired_path(t, total_t, p_r0, p_ring_goal)
