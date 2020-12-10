@@ -95,12 +95,13 @@ def vec(x,y,z):
 #  dimensional matrix, and transpose into the column form.  And then
 #  we use vstack to stack vertically...
 #
-def etip(p, pd, R, Rd):
+def etip(p, pd):
+    # add back in R, Rd to above if rotation
     ep  = pd - p
-    eR1 = 0.5 * (np.cross(R[:,0], Rd[:,0]) +
-                 np.cross(R[:,1], Rd[:,1]) +
-                 np.cross(R[:,2], Rd[:,2]))
-    eR  = np.matrix.transpose(np.atleast_2d(eR1))
+    # eR1 = 0.5 * (np.cross(R[:,0], Rd[:,0]) +
+                # np.cross(R[:,1], Rd[:,1]) +
+                # np.cross(R[:,2], Rd[:,2]))
+    # eR  = np.matrix.transpose(np.atleast_2d(eR1))
     # return np.vstack((ep,eR))  Add this back in if doing rotation orientations as well
     return ep
 
@@ -115,14 +116,14 @@ def cubic_coeff(dt, p0, pf, v0, vf):
                    [0, 1 , 0    , 0     ],
                    [1, dt, dt**2, dt**3 ], 
                    [0, 1 , 2*dt , 2*dt**2]] )
-    Yinv = np.linalg.inv(Y)
-    coeff = Yinv @ np.array([[p0], [pf], [v0], [vf]])
+    Yinv = np.linalg.pinv(Y)
+    coeff = Yinv @ np.array([p0, pf, v0, vf])
     return coeff
 
 def desired_path(t, dt, p0, pgoal):
-    c_t_x = cubic_coeff(dt, p0[0], pgoal[0], 0, 0)
-    c_t_y = cubic_coeff(dt, p0[1], pgoal[1], 0, 0)
-    c_t_z = cubic_coeff(dt, p0[2], pgoal[2], 0, 0)
+    c_t_x = cubic_coeff(dt, p0[0], pgoal[0], np.array([0]), np.array([0]))
+    c_t_y = cubic_coeff(dt, p0[1], pgoal[1], np.array([0]), np.array([0]))
+    c_t_z = cubic_coeff(dt, p0[2], pgoal[2], np.array([0]), np.array([0]))
 
     coeffMat = np.array([c_t_x, c_t_y, c_t_z])
 
@@ -252,12 +253,19 @@ if __name__ == "__main__":
     # Close finger positions
     # Used fkin to establish the closed positions to calculate errors/know where you are aiming for in the task space
     
+
+
     # for number 9
     theta_ti = np.array([[1.51], [0], [0.11], 
                          [0.18],[0],[0.87],[1.42],
                          [0],[0],[0], 
                          [0], [0], [0], [0],
                          [0], [0], [0]])
+
+    p_index_ti = np.zeros((3,1))
+    p_thumb_ti = np.zeros((3,1))
+    kin_index.fkin(theta_ti, p_index_ti, R_index)
+    kin_thumb.fkin(theta_ti, p_thumb_ti, R_thumb)
     
     # for number 8
     theta_tm = np.array([[1.12], [-0.38], [0.27], [0.31],\
@@ -266,6 +274,11 @@ if __name__ == "__main__":
                          [0], [0], [0], [0],
                          [0], [0], [0]])
 
+    p_middle_tm = np.zeros((3,1))
+    p_thumb_tm = np.zeros((3,1))
+    kin_middle.fkin(theta_tm, p_middle_tm, R_middle)
+    kin_thumb.fkin(theta_tm, p_thumb_tm, R_thumb)
+
     # for number 7
     theta_tr = np.array([[1.19], [-0.91], [0.20], [0.30], \
                          [0], [0], [0],
@@ -273,12 +286,23 @@ if __name__ == "__main__":
                          [0], [0.42], [1.33], [1.09],
                          [0], [0], [0]])
 
+    p_ring_tr = np.zeros((3,1))
+    p_thumb_tr = np.zeros((3,1))
+    kin_ring.fkin(theta_tr, p_ring_tr, R_ring)
+    kin_thumb.fkin(theta_tr, p_thumb_tr, R_thumb)
+
     # for number 6
     theta_tp = np.array([[1.41], [-1.07], [0.14], [0.13], \
                          [0], [0], [0],
                          [0], [0], [0],
                          [0], [0], [0], [0],
                          [0.69], [1.17], [1.03]])
+
+    p_pinky_tp = np.zeros((3,1))
+    p_thumb_tp = np.zeros((3,1))
+    kin_pinky.fkin(theta_tp, p_pinky_tp, R_pinky)
+    kin_thumb.fkin(theta_tp, p_thumb_tp, R_thumb)
+
 
     # Open hand positions
 
@@ -310,17 +334,30 @@ if __name__ == "__main__":
 #
 
 # Should add the -1 trick when we have the opportunity
+
+# initializing the desired velocities and positions
     t = 0.0
-    tf = 9.0
+    lam = 0.1/dt
+    total_t = 2.0
+
+    (pd_thumb, vd_thumb) = desired_path(0, total_t, p_thumb_open, p_thumb_open)
+    (pd_index, vd_index) = desired_path(0, total_t, p_index_open, p_index_open)
+    (pd_middle, vd_middle) = desired_path(0, total_t, p_middle_open, p_middle_open)
+    (pd_ring, vd_ring) = desired_path(0, total_t, p_ring_open, p_ring_open)
+    (pd_pinky, vd_pinky) = desired_path(0, total_t, p_pinky_open, p_pinky_open)
+
+    
 
     while not rospy.is_shutdown():
 
         t+= dt
 
-        th_thumb = theta[0:4, :]
-        th_index = theta[4:7, :]
-        th_middle = theta[7:10, :]
-        th_ring = theta[10:14, :]
+
+
+        th_thumb = theta[0:N_thumb, :]
+        th_index = theta[N_thumb:N_thumb + N_index, :]
+        th_middle = theta[N_thumb + N_index:N_thumb + N_index + N_middle, :]
+        th_ring = theta[N_thumb + N_index + N_middle:N_thumb + N_index + N_middle + N_ring, :]
         th_pinky = np.zeros((4,1))
         th_pinky[0,:] = theta[10,:]
         th_pinky[1:,:] = theta[14:17,:]
@@ -334,11 +371,11 @@ if __name__ == "__main__":
 
         # Calculate all the errors from the previous step:
 
-        e_thumb = etip(p_thumb, pd_thumb, R_thumb, Rd_thumb)
-        e_index = etip(p_index, pd_index, R_index, Rd_index)
-        e_middle = etip(p_middle, pd_middle, R_middle, Rd_middle)
-        e_ring = etip(p_ring, pd_ring, R_ring, Rd_ring)
-        e_pinky = etip(p_pinky, pd_pinky, R_pinky, Rd_pinky)
+        e_thumb = etip(p_thumb, pd_thumb)
+        e_index = etip(p_index, pd_index)
+        e_middle = etip(p_middle, pd_middle)
+        e_ring = etip(p_ring, pd_ring)
+        e_pinky = etip(p_pinky, pd_pinky)
 
         # Read some input, either of thumb position + closed state, or just what number to be achieved
 
@@ -364,7 +401,7 @@ if __name__ == "__main__":
         h_free = 2
         
 
-        desiredNum = 6 #we can change this later to incorporate the thumb position
+        desiredNum = 9 #we can change this later to incorporate the thumb position
         handState = h_close
 
 
@@ -414,7 +451,7 @@ if __name__ == "__main__":
         
                 elif desiredNum == 8:
                 # else if closed && 8
-                    p_thumb_goal = p_thumb_tmn
+                    p_thumb_goal = p_thumb_tm
                     p_middle_goal = p_middle_tm
                 elif desiredNum == 7:
                 # else if closed && 7
@@ -425,46 +462,47 @@ if __name__ == "__main__":
                     p_thumb_goal = p_thumb_tp
                     p_pinky_goal = p_pinky_tp
             # because the free doesn't touch the thumb at all, we're going to put it here
-            (pd_thumb, vd_thumb) = desired(t, total_t, p_t0, p_thumb_goal)
+            (pd_thumb, vd_thumb) = desired_path(t, total_t, p_t0, p_thumb_goal)
             # Calculate thetas for the thumb position
             vr_thumb = vd_thumb + lam * e_thumb   # 3 x 1 column vector
-            Jv_thumb = J_thumb[0:2, :]      # 3 x dofs matrix
+            Jv_thumb = J_thumb[0:3, :]      # 3 x dofs matrix
             Jvinv_thumb = np.linalg.pinv(Jv_thumb) # dofs x 3 matrix
+
             theta_dot_thumb = Jvinv_thumb @ vr_thumb     # dofs x 1 column vector
             theta_thumb = theta_dot_thumb * dt     # theta_palm, theta_palm_updown, theta_12, theta_23
             
         # Now that we have all the goals, we can calculate the desired positions (besides the thumb)
 
-        (pd_index, vd_index) = desired(t, total_t, p_i0, p_index_goal)
-        (pd_middle, vd_middle) = desired(t, total_t, p_m0, p_middle_goal)
-        (pd_ring, vd_ring) = desired(t, total_t, p_r0, p_ring_goal)
-        (pd_pinky, vd_pinky) = desired(t, total_t, p_r0, p_ring_goal)
+        (pd_index, vd_index) = desired_path(t, total_t, p_i0, p_index_goal)
+        (pd_middle, vd_middle) = desired_path(t, total_t, p_m0, p_middle_goal)
+        (pd_ring, vd_ring) = desired_path(t, total_t, p_r0, p_ring_goal)
+        (pd_pinky, vd_pinky) = desired_path(t, total_t, p_r0, p_ring_goal)
 
         # From these desired positions and velocities, we can probably get:
         # Calculate thetas for index position
         vr_index = vd_index + lam * e_index   # 3 x 1 column vector
-        Jv_index = J_index[0:2, :]      # 3 x dofs matrix
+        Jv_index = J_index[0:3, :]      # 3 x dofs matrix
         Jvinv_index = np.linalg.pinv(Jv_index) # dofs x 3 matrix
         theta_dot_index = Jvinv_index @ vr_index     # dofs x 1 column vector
         theta_index = theta_dot_index * dt     # index_palm, index_12, index_23
 
         # Calculate thetas for middle position
         vr_middle = vd_middle + lam * e_middle   # 3 x 1 column vector
-        Jv_middle = J_middle[0:2, :]      # 3 x dofs matrix
+        Jv_middle = J_middle[0:3, :]      # 3 x dofs matrix
         Jvinv_middle = np.linalg.pinv(Jv_middle) # dofs x 3 matrix
         theta_dot_middle = Jvinv_middle @ vr_middle     # dofs x 1 column vector
         theta_middle = theta_dot_middle * dt     # middle_palm, middle_12, middle_23
 
         # Calculate thetas for ring position
         vr_ring = vd_ring + lam * e_ring   # 3 x 1 column vector
-        Jv_ring = J_ring[0:2, :]      # 3 x dofs matrix
+        Jv_ring = J_ring[0:3, :]      # 3 x dofs matrix
         Jvinv_ring = np.linalg.pinv(Jv_ring) # dofs x 3 matrix
         theta_dot_ring = Jvinv_ring @ vr_ring     # dofs x 1 column vector
         theta_ring = theta_dot_ring * dt     # rp_palm, ring_rp, ring_12, ring_23
 
         # Calculate thetas for pinky position
         vr_pinky = vd_pinky + lam * e_pinky   # 3 x 1 column vector
-        Jv_pinky = J_pinky[0:2, :]      # 3 x dofs matrix
+        Jv_pinky = J_pinky[0:3, :]      # 3 x dofs matrix
         Jvinv_pinky = np.linalg.pinv(Jv_pinky) # dofs x 3 matrix
         theta_dot_pinky = Jvinv_pinky @ vr_pinky     # dofs x 1 column vector
         theta_pinky = theta_dot_pinky * dt     # rp_palm, pinky_rp, pinky_12, pinky_23
@@ -476,4 +514,5 @@ if __name__ == "__main__":
             theta = np.vstack((theta_thumb, theta_index, theta_middle, theta_ring, theta_pinky[1:N_pinky]))
 
         pub.send(theta)
+
         servo.sleep()
