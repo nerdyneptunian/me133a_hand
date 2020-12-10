@@ -207,6 +207,7 @@ if __name__ == "__main__":
     p_index = np.zeros((3,1))
     R_index = np.identity(3)
     J_index = np.zeros((6,N_index))
+    Jv_index = J_index[0:3, :]
     p_index_open = np.zeros((3,1))
     R_index_open = np.identity(3)
     theta_index_open = np.zeros((N_index,1))
@@ -338,7 +339,8 @@ if __name__ == "__main__":
 # initializing the desired velocities and positions
     t = 0.0
     lam = 0.1/dt
-    total_t = 2.0
+    total_t = 1.0
+    tf = total_t
 
     (pd_thumb, vd_thumb) = desired_path(0, total_t, p_thumb_open, p_thumb_open)
     (pd_index, vd_index) = desired_path(0, total_t, p_index_open, p_index_open)
@@ -350,7 +352,7 @@ if __name__ == "__main__":
 
     while not rospy.is_shutdown():
 
-        t+= dt
+        
 
 
 
@@ -376,6 +378,8 @@ if __name__ == "__main__":
         e_middle = etip(p_middle, pd_middle)
         e_ring = etip(p_ring, pd_ring)
         e_pinky = etip(p_pinky, pd_pinky)
+
+        t+= dt
 
         # Read some input, either of thumb position + closed state, or just what number to be achieved
 
@@ -474,6 +478,7 @@ if __name__ == "__main__":
         # Now that we have all the goals, we can calculate the desired positions (besides the thumb)
 
         (pd_index, vd_index) = desired_path(t, total_t, p_i0, p_index_goal)
+        #print("v index: ", vd_index) nonzero
         (pd_middle, vd_middle) = desired_path(t, total_t, p_m0, p_middle_goal)
         (pd_ring, vd_ring) = desired_path(t, total_t, p_r0, p_ring_goal)
         (pd_pinky, vd_pinky) = desired_path(t, total_t, p_r0, p_ring_goal)
@@ -481,10 +486,15 @@ if __name__ == "__main__":
         # From these desired positions and velocities, we can probably get:
         # Calculate thetas for index position
         vr_index = vd_index + lam * e_index   # 3 x 1 column vector
+        # print("vr index", vr_index) nonzero
+        #print(np.shape(J_index)) #this needs to be the whole 6?
+        kin_index.Jac(th_index, J_index)
         Jv_index = J_index[0:3, :]      # 3 x dofs matrix
+        #print("J index: ", Jv_index) # this is zero
         Jvinv_index = np.linalg.pinv(Jv_index) # dofs x 3 matrix
         theta_dot_index = Jvinv_index @ vr_index     # dofs x 1 column vector
-        theta_index = theta_dot_index * dt     # index_palm, index_12, index_23
+        # print("Theta dot: ", theta_dot_index) # this is zero...
+        th_index = theta_dot_index * dt     # index_palm, index_12, index_23
 
         # Calculate thetas for middle position
         vr_middle = vd_middle + lam * e_middle   # 3 x 1 column vector
@@ -509,10 +519,15 @@ if __name__ == "__main__":
 
 
         if desiredNum ==6:
-            theta = np.vstack((theta_thumb, theta_index, theta_middle, theta_ring[1:N_ring], theta_pinky))
+            theta = np.vstack((theta_thumb, th_index, theta_middle, theta_ring[1:N_ring], theta_pinky))
         else:
-            theta = np.vstack((theta_thumb, theta_index, theta_middle, theta_ring, theta_pinky[1:N_pinky]))
+            theta = np.vstack((theta_thumb, th_index, theta_middle, theta_ring, theta_pinky[1:N_pinky]))
 
+       # print(theta)
         pub.send(theta)
 
         servo.sleep()
+        print(t)
+
+        if (t >= tf):
+            break
