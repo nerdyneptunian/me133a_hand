@@ -31,16 +31,26 @@ def desired(t, tf, p0, pgoal):
 
 	pd = vec(pd_x, pd_y, pd_z)
 
-	return pd
+	vd_x = gen_vel(t, tf, p0[0], pgoal[0])
+	vd_y = gen_vel(t, tf, p0[1], pgoal[1])
+	vd_z = gen_vel(t, tf, p0[2], pgoal[2])
+
+	vd = vec(vd_x, vd_y,vd_z)
+	combined = np.array((pd,vd)).reshape((2,3,1))
+
+	return combined
 
 def gen_path(t, tf, p0, pgoal):
     path = p0 + (2*(p0 - pgoal)/tf**3)*t**3 + (3*(pgoal - p0)/tf**2)*t**2
     return path
 
+def gen_vel(t, tf, p0, pgoal):
+	vel = 6*((p0 - pgoal)*t*(t - tf))/tf**3
+	return vel
 
 print(desired(0.017,2.22,vec(-2,7.3,0.001),vec(2,-0.77,51)))
 
-# print(desired_path(2,0.01,np.array([[0],[0],[0]]),np.array([[5],[5],[5]])))
+print(desired_path(0.017,2.22,vec(-2,7.3,0.001),vec(2,-0.77,51)))
 
 
 

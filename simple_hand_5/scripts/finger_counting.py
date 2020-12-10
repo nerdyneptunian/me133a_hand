@@ -132,6 +132,32 @@ def etip(p, pd):
 
 #     return (pd, vd)
 
+def desired(t, tf, p0, pgoal):
+    pd_x = gen_path(t, tf, p0[0], pgoal[0])
+    pd_y = gen_path(t, tf, p0[1], pgoal[1])
+    pd_z = gen_path(t, tf, p0[2], pgoal[2])
+
+    pd = vec(pd_x, pd_y, pd_z)
+
+    vd_x = gen_vel(t, tf, p0[0], pgoal[0])
+    vd_y = gen_vel(t, tf, p0[1], pgoal[1])
+    vd_z = gen_vel(t, tf, p0[2], pgoal[2])
+
+    vd = vec(vd_x, vd_y,vd_z)
+    combined = np.array((pd,vd)).reshape((2,3,1))
+
+    return combined
+
+def gen_path(t, tf, p0, pgoal):
+    path = p0 + (2*(p0 - pgoal)/tf**3)*t**3 + (3*(pgoal - p0)/tf**2)*t**2
+    return path
+
+def gen_vel(t, tf, p0, pgoal):
+    vel = 6*((p0 - pgoal)*t*(t - tf))/tf**3
+    return vel
+
+
+
 def plane_proximity(pos, plane):
     # this takes in a position and plane vector and returns the distance between
     d = np.abs(plane[0]*pos[0] + plane[1]*pos[1] + \
@@ -343,17 +369,17 @@ if __name__ == "__main__":
     total_t = 1.0
     tf = total_t
 
-    (pd_thumb, vd_thumb) = desired_path(0, total_t, p_thumb_open, p_thumb_open)
-    (pd_index, vd_index) = desired_path(0, total_t, p_index_open, p_index_open)
-    (pd_middle, vd_middle) = desired_path(0, total_t, p_middle_open, p_middle_open)
-    (pd_ring, vd_ring) = desired_path(0, total_t, p_ring_open, p_ring_open)
-    (pd_pinky, vd_pinky) = desired_path(0, total_t, p_pinky_open, p_pinky_open)
+    (pd_thumb, vd_thumb) = desired(0, total_t, p_thumb_open, p_thumb_open)
+    (pd_index, vd_index) = desired(0, total_t, p_index_open, p_index_open)
+    (pd_middle, vd_middle) = desired(0, total_t, p_middle_open, p_middle_open)
+    (pd_ring, vd_ring) = desired(0, total_t, p_ring_open, p_ring_open)
+    (pd_pinky, vd_pinky) = desired(0, total_t, p_pinky_open, p_pinky_open)
 
     
 
     while not rospy.is_shutdown():
 
-        
+
 
 
 
@@ -365,12 +391,16 @@ if __name__ == "__main__":
         th_pinky[0,:] = theta[10,:]
         th_pinky[1:,:] = theta[14:17,:]
 
+
+
         # Update the locations of each tip
         kin_thumb.fkin(th_thumb, p_thumb, R_thumb)
         kin_index.fkin(th_index, p_index, R_index)
         kin_middle.fkin(th_middle, p_middle, R_middle)
         kin_ring.fkin(th_ring, p_ring, R_ring)
         kin_pinky.fkin(th_pinky, p_pinky, R_pinky)
+
+        kin_index.Jac(th_index, J_index) 
 
         # Calculate all the errors from the previous step:
 
@@ -453,7 +483,6 @@ if __name__ == "__main__":
                 # if closed && 9
                     p_thumb_goal = p_thumb_ti
                     p_index_goal = p_index_ti
-                    print(p_index_ti)
         
                 elif desiredNum == 8:
                 # else if closed && 8
@@ -468,7 +497,7 @@ if __name__ == "__main__":
                     p_thumb_goal = p_thumb_tp
                     p_pinky_goal = p_pinky_tp
             # because the free doesn't touch the thumb at all, we're going to put it here
-            (pd_thumb, vd_thumb) = desired_path(t, dt, p_t0, p_thumb_goal)
+            (pd_thumb, vd_thumb) = desired(t, total_t, p_t0, p_thumb_goal)
             # Calculate thetas for the thumb position
             vr_thumb = vd_thumb + lam * e_thumb   # 3 x 1 column vector
             Jv_thumb = J_thumb[0:3, :]      # 3 x dofs matrix
@@ -479,18 +508,21 @@ if __name__ == "__main__":
             
         # Now that we have all the goals, we can calculate the desired positions (besides the thumb)
 
-        (pd_index, vd_index) = desired_path(t, total_t, p_index_open, p_index_goal) #test with open instead
-        #print("v index: ", vd_index) nonzero
-        (pd_middle, vd_middle) = desired_path(t, total_t, p_m0, p_middle_goal)
-        (pd_ring, vd_ring) = desired_path(t, total_t, p_r0, p_ring_goal)
-        (pd_pinky, vd_pinky) = desired_path(t, total_t, p_r0, p_ring_goal)
+        (pd_index, vd_index) = desired(t, total_t, p_index_open, p_index_goal) #test with open instead
+        print("v index: ", vd_index) 
+        #print("p actual: ", )
+        #print("p open: ", p_index_open)
+        #print("p desired: ", p_index_goal)
+        (pd_middle, vd_middle) = desired(t, total_t, p_m0, p_middle_goal)
+        (pd_ring, vd_ring) = desired(t, total_t, p_r0, p_ring_goal)
+        (pd_pinky, vd_pinky) = desired(t, total_t, p_r0, p_ring_goal)
 
         # From these desired positions and velocities, we can probably get:
         # Calculate thetas for index position
         vr_index = vd_index + lam * e_index   # 3 x 1 column vector
         # print("vr index", vr_index) nonzero
         #print(np.shape(J_index)) #this needs to be the whole 6?
-        kin_index.Jac(th_index, J_index)
+        # kin_index.Jac(th_index, J_index)
         Jv_index = J_index[0:3, :]      # 3 x dofs matrix
         #print("J index: ", Jv_index) # this is zero
         Jvinv_index = np.linalg.pinv(Jv_index) # dofs x 3 matrix
@@ -523,6 +555,8 @@ if __name__ == "__main__":
         if desiredNum ==6:
             theta = np.vstack((theta_thumb, th_index, theta_middle, theta_ring[1:N_ring], theta_pinky))
         else:
+            #print("thumb: ",np.shape(theta_thumb))
+            #print("index: ",np.shape(th_index))
             theta = np.vstack((theta_thumb, th_index, theta_middle, theta_ring, theta_pinky[1:N_pinky]))
 
        # print(theta)
