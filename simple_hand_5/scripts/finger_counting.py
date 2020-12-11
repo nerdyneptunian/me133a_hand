@@ -24,8 +24,38 @@ def kin_var_allocate(N):
     p_open = np.zeros((3,1))
     R_open = np.identity(3)
     theta_open = np.zeros((N,1))
+    theta_open[N-2:N] = 0.1*np.ones((2, 1))
 
-    return (p, R, J, Jv, p_open, R_open, theta_open)
+    return (p, R, J, p_open, R_open, theta_open)
+
+def theta_finger(th_0, vd_fing, J_fing, e_fing, lam):
+        # From these desired positions and velocities, we can probably get:
+        # Calculate thetas for index position
+        vr_fing = vd_fing + lam * e_fing   # 3 x 1 column vector
+        # print("vr index", vr_index) nonzero
+        #print(np.shape(J_index)) #this needs to be the whole 6?
+        # kin_index.Jac(th_index, J_index)
+        Jv_fing = J_fing[0:3, :]      # 3 x dofs matrix
+        #print("J index: ", Jv_index) # this is zero
+        Jvinv_fing = np.linalg.pinv(Jv_fing) # dofs x 3 matrix
+        theta_dot_fing = Jvinv_fing @ vr_fing     # dofs x 1 column vector
+        # print("Theta dot: ", theta_dot_index) # this is zero...
+        th_fing = theta_dot_fing * dt + th_0     # index_palm, index_12, index_23
+
+        return th_fing
+
+
+#  3x1 Error Computation
+#
+def etip(p, pd):
+    # add back in R, Rd to above if rotation
+    ep  = pd - p
+    # eR1 = 0.5 * (np.cross(R[:,0], Rd[:,0]) +
+                # np.cross(R[:,1], Rd[:,1]) +
+                # np.cross(R[:,2], Rd[:,2]))
+    # eR  = np.matrix.transpose(np.atleast_2d(eR1))
+    # return np.vstack((ep,eR))  Add this back in if doing rotation orientations as well
+    return ep
 
 #
 #  Joint States Publisher
@@ -73,19 +103,6 @@ class JointStatePublisher:
         self.pub.publish(self.msg)
 
 
-#  3x1 Error Computation
-#
-def etip(p, pd):
-    # add back in R, Rd to above if rotation
-    ep  = pd - p
-    # eR1 = 0.5 * (np.cross(R[:,0], Rd[:,0]) +
-                # np.cross(R[:,1], Rd[:,1]) +
-                # np.cross(R[:,2], Rd[:,2]))
-    # eR  = np.matrix.transpose(np.atleast_2d(eR1))
-    # return np.vstack((ep,eR))  Add this back in if doing rotation orientations as well
-    return ep
-
-
 #
 #  Main Code
 #
@@ -125,22 +142,17 @@ if __name__ == "__main__":
     # tip orientation, and Jacobian.  The kinematics code changes the
     # data in place, so these need to be allocated!  But the content
     # will be overwritten so the initial values are irrelevant.
-    (p_thumb, R_thumb, J_thumb, Jv_thumb, p_thumb_open, R_thumb_open, theta_thumb_open) 
-        = kin_var_allocate(N_thumb)
+    (p_thumb, R_thumb, J_thumb, p_thumb_open, R_thumb_open, theta_thumb_open) = kin_var_allocate(N_thumb)
 
-    (p_index, R_index, J_index, Jv_index, p_index_open, R_index_open, theta_index_open) 
-        = kin_var_allocate(N_index)
+    (p_index, R_index, J_index, p_index_open, R_index_open, theta_index_open) = kin_var_allocate(N_index)
 
-    (p_middle, R_middle, J_middle, Jv_middle, p_middle_open, R_middle_open, theta_middle_open) 
-        = kin_var_allocate(N_middle)
+    (p_middle, R_middle, J_middle, p_middle_open, R_middle_open, theta_middle_open) = kin_var_allocate(N_middle)
 
-    (p_ring, R_ring, J_ring, Jv_ring, p_ring_open, R_ring_open, theta_ring_open) 
-        = kin_var_allocate(N_ring)
+    (p_ring, R_ring, J_ring, p_ring_open, R_ring_open, theta_ring_open) = kin_var_allocate(N_ring)
     
-    (p_pinky, R_pinky, J_pinky, Jv_pinky, p_pinky_open, R_pinky_open, theta_pinky_open) 
-        = kin_var_allocate(N_pinky)
+    (p_pinky, R_pinky, J_pinky, p_pinky_open, R_pinky_open, theta_pinky_open) = kin_var_allocate(N_pinky)
     
-    theta = np.zeros((N_thumb + N_index + N_ring + N_pinky +N_middle,1))
+    theta = np.zeros((N_thumb + N_index + N_ring + N_pinky + N_middle - 1,1))
 
     # Set up the publisher, naming the joints!
     pub = JointStatePublisher(('thumb_palm', 'thumb_palm_updown', 'thumb_12', 'thumb_23',
@@ -222,6 +234,8 @@ if __name__ == "__main__":
     kin_ring.fkin(theta_ring_open, p_ring_open, R_ring_open)
     kin_pinky.fkin(theta_pinky_open, p_pinky_open, R_pinky_open)
 
+    theta = np.vstack((theta_thumb_open, theta_index_open, theta_middle_open, theta_ring_open, theta_pinky_open[1:N_pinky]))
+
 
     # finger planes
     # we can make these more robust later with actual positions, but I 
@@ -256,12 +270,13 @@ if __name__ == "__main__":
     (pd_ring, vd_ring) = desired(0, total_t, p_ring_open, p_ring_open)
     (pd_pinky, vd_pinky) = desired(0, total_t, p_pinky_open, p_pinky_open)
 
+
     #
     #   Main Time Loop
     #
 
     while not rospy.is_shutdown():
-
+        print(t)
 
         th_thumb = theta[0:N_thumb, :]
         th_index = theta[N_thumb:N_thumb + N_index, :]
@@ -271,8 +286,6 @@ if __name__ == "__main__":
         th_pinky[0,:] = theta[10,:]
         th_pinky[1:,:] = theta[14:17,:]
 
-
-
         # Update the locations of each tip
         kin_thumb.fkin(th_thumb, p_thumb, R_thumb)
         kin_index.fkin(th_index, p_index, R_index)
@@ -280,7 +293,14 @@ if __name__ == "__main__":
         kin_ring.fkin(th_ring, p_ring, R_ring)
         kin_pinky.fkin(th_pinky, p_pinky, R_pinky)
 
+        # print("p actual: ", p_pinky)
+        # print("p goal: ", p_pinky_open)
+
+        kin_thumb.Jac(th_thumb, J_thumb)
         kin_index.Jac(th_index, J_index) 
+        kin_middle.Jac(th_middle, J_middle)
+        kin_ring.Jac(th_ring, J_ring)
+        kin_pinky.Jac(th_pinky, J_pinky) 
 
         # Calculate all the errors from the previous step:
 
@@ -290,6 +310,8 @@ if __name__ == "__main__":
         e_ring = etip(p_ring, pd_ring)
         e_pinky = etip(p_pinky, pd_pinky)
 
+        # print("Error Pinky: ", e_pinky)
+
         t+= dt
 
         h_open = 0
@@ -297,7 +319,7 @@ if __name__ == "__main__":
         h_free = 2
         
 
-        desiredNum = 9 #we can change this later to incorporate the thumb position
+        desiredNum = 6 #we can change this later to incorporate the thumb position
         handState = h_close
        
             
@@ -367,61 +389,33 @@ if __name__ == "__main__":
         # Now that we have all the goals, we can calculate the desired positions (besides the thumb)
 
         (pd_index, vd_index) = desired(t, total_t, p_index_open, p_index_goal) #test with open instead
-        print("v index: ", vd_index) 
-        #print("p actual: ", )
-        #print("p open: ", p_index_open)
-        #print("p desired: ", p_index_goal)
-        (pd_middle, vd_middle) = desired(t, total_t, p_m0, p_middle_goal)
-        (pd_ring, vd_ring) = desired(t, total_t, p_r0, p_ring_goal)
-        (pd_pinky, vd_pinky) = desired(t, total_t, p_r0, p_ring_goal)
+        (pd_middle, vd_middle) = desired(t, total_t, p_middle_open, p_middle_goal)
+        (pd_ring, vd_ring) = desired(t, total_t, p_ring_open, p_ring_goal)
+        (pd_pinky, vd_pinky) = desired(t, total_t, p_pinky_open, p_pinky_goal)
 
-        # From these desired positions and velocities, we can probably get:
-        # Calculate thetas for index position
-        vr_index = vd_index + lam * e_index   # 3 x 1 column vector
-        # print("vr index", vr_index) nonzero
-        #print(np.shape(J_index)) #this needs to be the whole 6?
-        # kin_index.Jac(th_index, J_index)
-        Jv_index = J_index[0:3, :]      # 3 x dofs matrix
-        #print("J index: ", Jv_index) # this is zero
-        Jvinv_index = np.linalg.pinv(Jv_index) # dofs x 3 matrix
-        theta_dot_index = Jvinv_index @ vr_index     # dofs x 1 column vector
-        # print("Theta dot: ", theta_dot_index) # this is zero...
-        th_index = theta_dot_index * dt     # index_palm, index_12, index_23
+        # print("Vd calculated: ", vd_pinky)
 
-        # Calculate thetas for middle position
-        vr_middle = vd_middle + lam * e_middle   # 3 x 1 column vector
-        Jv_middle = J_middle[0:3, :]      # 3 x dofs matrix
-        Jvinv_middle = np.linalg.pinv(Jv_middle) # dofs x 3 matrix
-        theta_dot_middle = Jvinv_middle @ vr_middle     # dofs x 1 column vector
-        theta_middle = theta_dot_middle * dt     # middle_palm, middle_12, middle_23
 
-        # Calculate thetas for ring position
-        vr_ring = vd_ring + lam * e_ring   # 3 x 1 column vector
-        Jv_ring = J_ring[0:3, :]      # 3 x dofs matrix
-        Jvinv_ring = np.linalg.pinv(Jv_ring) # dofs x 3 matrix
-        theta_dot_ring = Jvinv_ring @ vr_ring     # dofs x 1 column vector
-        theta_ring = theta_dot_ring * dt     # rp_palm, ring_rp, ring_12, ring_23
+        th_index = theta_finger(th_index, vd_index, J_index, e_index, lam)
+        th_middle = theta_finger(th_middle, vd_middle, J_middle, e_middle, lam)
+        th_ring = theta_finger(th_ring, vd_ring, J_ring, e_ring, lam)
+        th_pinky = theta_finger(th_pinky, vd_pinky, J_pinky, e_pinky, lam)
 
-        # Calculate thetas for pinky position
-        vr_pinky = vd_pinky + lam * e_pinky   # 3 x 1 column vector
-        Jv_pinky = J_pinky[0:3, :]      # 3 x dofs matrix
-        Jvinv_pinky = np.linalg.pinv(Jv_pinky) # dofs x 3 matrix
-        theta_dot_pinky = Jvinv_pinky @ vr_pinky     # dofs x 1 column vector
-        theta_pinky = theta_dot_pinky * dt     # rp_palm, pinky_rp, pinky_12, pinky_23
+        print("Final Theta:", th_pinky)
 
 
         if desiredNum ==6:
-            theta = np.vstack((theta_thumb, th_index, theta_middle, theta_ring[1:N_ring], theta_pinky))
+            theta = np.vstack((th_thumb, th_index, th_middle, th_ring[1:N_ring], th_pinky))
         else:
             #print("thumb: ",np.shape(theta_thumb))
             #print("index: ",np.shape(th_index))
-            theta = np.vstack((theta_thumb, th_index, theta_middle, theta_ring, theta_pinky[1:N_pinky]))
+            theta = np.vstack((th_thumb, th_index, th_middle, th_ring, th_pinky[1:N_pinky]))
 
        # print(theta)
         pub.send(theta)
 
         servo.sleep()
-        print(t)
+        
 
         if (t >= tf):
             break
