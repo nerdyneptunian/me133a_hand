@@ -28,19 +28,21 @@ def kin_var_allocate(N):
 
     return (p, R, J, p_open, R_open, theta_open)
 
-def theta_finger(th_0, vd_fing, wd_fing, J_fing, e_fing, lam):
+def theta_finger(th_0, vd_fing, wd_fing, J_fing, e_fing, lam, right_pseudo=False):
         # From these desired positions and velocities, we can probably get:
         # Calculate thetas for index position
         vr_fing = np.vstack((vd_fing, wd_fing)) + lam * e_fing   # 3 x 1 column vector
-        # print("vr index", vr_index) nonzero
-        #print(np.shape(J_index)) #this needs to be the whole 6?
-        # kin_index.Jac(th_index, J_index)
-        # Jv_fing = J_fing[0:3, :]      # 3 x dofs matrix
-        #print("J index: ", Jv_index) # this is zero
-        Jvinv_fing = np.linalg.pinv(J_fing) # dofs x 3 matrix
-        theta_dot_fing = Jvinv_fing @ vr_fing     # dofs x 1 column vector
-        # print("Theta dot: ", theta_dot_index) # this is zero...
-        th_fing = theta_dot_fing * dt + th_0     # index_palm, index_12, index_23
+        if right_pseudo:
+            gamma = 0.1
+            Jt_fing = np.transpose(J_fing)
+            # J_Jt = J_fing @ Jt_fing
+            # J_pinv = Jt_fing @ np.linalg.inv(J_Jt)
+            theta_dot_fing = np.linalg.pinv(Jt_fing @ J_fing + gamma**2 * np.identity(4)) @ Jt_fing @ vr_fing
+        else:
+            J_pinv = np.linalg.pinv(J_fing) # dofs x 3 matrix
+            theta_dot_fing = J_pinv @ vr_fing     # dofs x 1 column vector
+
+        th_fing = theta_dot_fing * dt + th_0 
 
         return th_fing
 
@@ -424,7 +426,7 @@ if __name__ == "__main__":
         (Rd_pinky, wd_pinky) = rot_path(t, total_t, desiredNum, 'pinky', R_pinky_open)
 
 
-        th_thumb = theta_finger(th_thumb, vd_thumb, wd_thumb, J_thumb, e_thumb, lam)
+        th_thumb = theta_finger(th_thumb, vd_thumb, wd_thumb, J_thumb, e_thumb, lam, True)
         th_index = theta_finger(th_index, vd_index, wd_index, J_index, e_index, lam)
         th_middle = theta_finger(th_middle, vd_middle, wd_middle, J_middle, e_middle, lam)
         th_ring = theta_finger(th_ring, vd_ring, wd_ring, J_ring, e_ring, lam)
