@@ -14,6 +14,19 @@ from hw6code.kinematics import Kinematics #Check if this library actually exists
 
 from sensor_msgs.msg   import JointState
 
+from hand_math import desired, vec, plane_vec
+
+def kin_var_allocate(N):
+    p = np.zeros((3,1))
+    R = np.identity(3)
+    J = np.zeros((6,N))
+    Jv = J[0:3, :]
+    p_open = np.zeros((3,1))
+    R_open = np.identity(3)
+    theta_open = np.zeros((N,1))
+
+    return (p, R, J, Jv, p_open, R_open, theta_open)
+
 #
 #  Joint States Publisher
 #
@@ -59,41 +72,8 @@ class JointStatePublisher:
         self.msg.header.stamp = rospy.Time.now()
         self.pub.publish(self.msg)
 
-#
-#  Basic Rotation Matrices
-#
-def Rx(theta):
-    return np.array([[ 1, 0            , 0            ],
-                     [ 0, np.cos(theta),-np.sin(theta)],
-                     [ 0, np.sin(theta), np.cos(theta)]])
 
-def Ry(theta):
-    return np.array([[ np.cos(theta), 0, np.sin(theta)],
-                     [ 0            , 1, 0            ],
-                     [-np.sin(theta), 0, np.cos(theta)]])
-
-def Rz(theta):
-    return np.array([[ np.cos(theta), -np.sin(theta), 0 ],
-                     [ np.sin(theta), np.cos(theta) , 0 ],
-                     [ 0            , 0             , 1 ]])
-
-#
-#  Simple Vector
-#
-#  Just collect a 3x1 column vector
-#
-def vec(x,y,z):
-    return np.array([[x], [y], [z]])
-
-
-#  6x1 Error Computation
-#
-#  Note the 3x1 translation is on TOP of the 3x1 rotation error!
-#
-#  Also note, the cross product does not return a column vector but
-#  just a one dimensional array.  So we need to convert into a 2
-#  dimensional matrix, and transpose into the column form.  And then
-#  we use vstack to stack vertically...
+#  3x1 Error Computation
 #
 def etip(p, pd):
     # add back in R, Rd to above if rotation
@@ -105,84 +85,6 @@ def etip(p, pd):
     # return np.vstack((ep,eR))  Add this back in if doing rotation orientations as well
     return ep
 
-# Cubic Function Coefficient Calculator
-#
-# Takes in position and velocity values p0 and v0 at time t0
-# and position and velocity values pf and vf at time tf and
-# returns the four coefficients for the function.
-
-# def cubic_coeff(dt, p0, pf, v0, vf):
-#     Y  = np.array([[1, 0 , 0    , 0     ], 
-#                    [0, 1 , 0    , 0     ],
-#                    [1, dt, dt**2, dt**3 ], 
-#                    [0, 1 , 2*dt , 3*dt**2]] )
-#     Yinv = np.linalg.pinv(Y)
-#     coeff = Yinv @ np.array([p0, pf, v0, vf])
-#     return coeff
-
-# def desired_path(t, dt, p0, pgoal):
-#     c_t_x = cubic_coeff(dt, p0[0], pgoal[0], np.array([0]), np.array([0]))
-#     c_t_y = cubic_coeff(dt, p0[1], pgoal[1], np.array([0]), np.array([0]))
-#     c_t_z = cubic_coeff(dt, p0[2], pgoal[2], np.array([0]), np.array([0]))
-
-#     coeffMat = np.array([c_t_x, c_t_y, c_t_z])
-
-#     pd = np.array([1, t, t**2, t**3]) @ coeffMat
-#     vd = np.array([0, 1, 2*t, 3*t**2]) @ coeffMat
-
-#     return (pd, vd)
-
-def desired(t, tf, p0, pgoal):
-    pd_x = gen_path(t, tf, p0[0], pgoal[0])
-    pd_y = gen_path(t, tf, p0[1], pgoal[1])
-    pd_z = gen_path(t, tf, p0[2], pgoal[2])
-
-    pd = vec(pd_x, pd_y, pd_z)
-
-    vd_x = gen_vel(t, tf, p0[0], pgoal[0])
-    vd_y = gen_vel(t, tf, p0[1], pgoal[1])
-    vd_z = gen_vel(t, tf, p0[2], pgoal[2])
-
-    vd = vec(vd_x, vd_y,vd_z)
-    combined = np.array((pd,vd)).reshape((2,3,1))
-
-    return combined
-
-def gen_path(t, tf, p0, pgoal):
-    path = p0 + (2*(p0 - pgoal)/tf**3)*t**3 + (3*(pgoal - p0)/tf**2)*t**2
-    return path
-
-def gen_vel(t, tf, p0, pgoal):
-    vel = 6*((p0 - pgoal)*t*(t - tf))/tf**3
-    return vel
-
-
-
-def plane_proximity(pos, plane):
-    # this takes in a position and plane vector and returns the distance between
-    d = np.abs(plane[0]*pos[0] + plane[1]*pos[1] + \
-        plane[2]*pos[2] + plane[3])/np.sqrt(plane[0]**2 + \
-        plane[1]**2 + plane[2]**2)
-    return(d)
-
-def plane_vec(point1, point2, point3):
-    # this takes in 3 points and returns the plane vector (of coefficients)
-    vec1 = point1 - point2
-    vec2 = point1 - point3
-    nVec = np.zeros((4,1))
-    nVec[0:3,:] = np.cross(vec1.T, vec2.T).T
-    nVec[3,:] = -(nVec[0]*point1[0] + nVec[1]*point1[1] + nVec[2]*point1[2])
-    return(nVec)
-    
-def closest_plane(pos):
-    # this takes in the thumb tip position and returns which number it should go for
-    finger_list = np.array([[9], [8], [7], [6]])
-    dist_index = plane_proximity(pos, index_plane)
-    dist_middle = plane_proximity(pos, middle_plane)
-    dist_ring = plane_proximity(pos, ring_plane)
-    dist_pinky = plane_proximity(pos, pinky_plane)
-    return finger_list[np.argmin(np.array([[dist_index], [dist_middle], [dist_ring], \
-        [dist_pinky]]))]
 
 #
 #  Main Code
@@ -223,41 +125,20 @@ if __name__ == "__main__":
     # tip orientation, and Jacobian.  The kinematics code changes the
     # data in place, so these need to be allocated!  But the content
     # will be overwritten so the initial values are irrelevant.
-    p_thumb = np.zeros((3,1))
-    R_thumb = np.identity(3)
-    J_thumb = np.zeros((6,N_thumb))
-    p_thumb_open = np.zeros((3,1))
-    R_thumb_open = np.identity(3)
-    theta_thumb_open = np.zeros((N_thumb,1))
+    (p_thumb, R_thumb, J_thumb, Jv_thumb, p_thumb_open, R_thumb_open, theta_thumb_open) 
+        = kin_var_allocate(N_thumb)
 
-    p_index = np.zeros((3,1))
-    R_index = np.identity(3)
-    J_index = np.zeros((6,N_index))
-    Jv_index = J_index[0:3, :]
-    p_index_open = np.zeros((3,1))
-    R_index_open = np.identity(3)
-    theta_index_open = np.zeros((N_index,1))
+    (p_index, R_index, J_index, Jv_index, p_index_open, R_index_open, theta_index_open) 
+        = kin_var_allocate(N_index)
 
-    p_middle = np.zeros((3,1))
-    R_middle = np.identity(3)
-    J_middle = np.zeros((6,N_middle))
-    p_middle_open = np.zeros((3,1))
-    R_middle_open = np.identity(3)
-    theta_middle_open = np.zeros((N_middle,1))
+    (p_middle, R_middle, J_middle, Jv_middle, p_middle_open, R_middle_open, theta_middle_open) 
+        = kin_var_allocate(N_middle)
 
-    p_ring = np.zeros((3,1))
-    R_ring = np.identity(3)
-    J_ring = np.zeros((6,N_ring))
-    p_ring_open = np.zeros((3,1))
-    R_ring_open = np.identity(3)
-    theta_ring_open = np.zeros((N_ring,1))
-
-    p_pinky = np.zeros((3,1))
-    R_pinky = np.identity(3)
-    J_pinky = np.zeros((6,N_pinky))
-    p_pinky_open = np.zeros((3,1))
-    R_pinky_open = np.identity(3)
-    theta_pinky_open = np.zeros((N_pinky,1))
+    (p_ring, R_ring, J_ring, Jv_ring, p_ring_open, R_ring_open, theta_ring_open) 
+        = kin_var_allocate(N_ring)
+    
+    (p_pinky, R_pinky, J_pinky, Jv_pinky, p_pinky_open, R_pinky_open, theta_pinky_open) 
+        = kin_var_allocate(N_pinky)
     
     theta = np.zeros((N_thumb + N_index + N_ring + N_pinky +N_middle,1))
 
@@ -277,11 +158,13 @@ if __name__ == "__main__":
     np.set_printoptions(suppress = True, precision = 6)
 
 
-    # Close finger positions
-    # Used fkin to establish the closed positions to calculate errors/know where you are aiming for in the task space
+    # 
+    #   Close finger positions
+    #
+
+    #   Used fkin to establish the closed positions to calculate errors
+    #   /know where you are aiming for in the task space
     
-
-
     # for number 9
     theta_ti = np.array([[1.51], [0], [0.11], 
                          [0.18],[0],[0.87],[1.42],
@@ -292,7 +175,6 @@ if __name__ == "__main__":
     p_index_ti = np.zeros((3,1))
     p_thumb_ti = np.zeros((3,1))
     kin_index.fkin(theta_ti, p_index_ti, R_index)
-
     kin_thumb.fkin(theta_ti, p_thumb_ti, R_thumb)
     
     # for number 8
@@ -354,12 +236,11 @@ if __name__ == "__main__":
     pinky_plane = plane_vec(p_pinky_open, vec(0.0441, -0.0613, 0.0542), \
         vec(0.0284, -0.0656, 0.0137))
 
+
+
 # For the initial desired, head to the starting position (t=0).
 # Clear the velocities, just to be sure.
 
-#
-# Pseudo Code for testing
-#
 
 # Should add the -1 trick when we have the opportunity
 
@@ -375,12 +256,11 @@ if __name__ == "__main__":
     (pd_ring, vd_ring) = desired(0, total_t, p_ring_open, p_ring_open)
     (pd_pinky, vd_pinky) = desired(0, total_t, p_pinky_open, p_pinky_open)
 
-    
+    #
+    #   Main Time Loop
+    #
 
     while not rospy.is_shutdown():
-
-
-
 
 
         th_thumb = theta[0:N_thumb, :]
@@ -412,25 +292,6 @@ if __name__ == "__main__":
 
         t+= dt
 
-        # Read some input, either of thumb position + closed state, or just what number to be achieved
-
-        # TODO: Set up subscriber to a gui? 
-            # Would want the gui to not constantly send messages, but only send a message when 
-            # a button is pressed like enter to send message
-            # Inputs from gui:
-                # Current position of thumb? (let person move thumb in designated x, y, z way)
-                # Whether open or close finger count
-                # 
-                # OR
-                #
-                # Current position of thumb?
-                # What number to go to?
-
-        # From message, determine which finger to close (if closed == true)
-            # If 1st option, determine what the closest finger is to close with thumb
-        # in the meantime, we'll just make this a state variable:
-       
-
         h_open = 0
         h_close = 1
         h_free = 2
@@ -438,10 +299,7 @@ if __name__ == "__main__":
 
         desiredNum = 9 #we can change this later to incorporate the thumb position
         handState = h_close
-
-
-
-        
+       
             
         #   if condition open vs. closed changed:
         # check if we need to do any motion- aka if close or free
