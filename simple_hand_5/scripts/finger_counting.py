@@ -152,19 +152,29 @@ if __name__ == "__main__":
     
     (p_pinky, R_pinky, J_pinky, p_pinky_open, R_pinky_open, theta_pinky_open) = kin_var_allocate(N_pinky)
     
-    theta = np.zeros((N_thumb + N_index + N_ring + N_pinky + N_middle - 1,1))
-    theta_thumb_open[1, :] = -0.1
+    
 
     # Set up the publisher, naming the joints!
     pub = JointStatePublisher(('thumb_palm', 'thumb_palm_updown', 'thumb_12', 'thumb_23',
                                'index_palm', 'index_12', 'index_23', 
                                'middle_palm', 'middle_12', 'middle_23', 
-                               'rp_palm', 'ring_rp', 'ring_12', 'ring_23',
+                               'ring_rp', 'ring_12', 'ring_23',
                                'pinky_rp', 'pinky_12', 'pinky_23'))
 
     # Make sure the URDF and publisher agree in dimensions.
-    if not pub.dofs() == N_thumb + N_index + N_ring + N_pinky + N_middle - 1:
+    if not pub.dofs() == N_thumb + N_index + N_ring + N_pinky + N_middle:
         rospy.logerr("FIX Publisher to agree with URDF!")
+
+
+    fj_thumb = 0
+    fj_index = N_thumb
+    fj_middle = fj_index + N_index 
+    fj_ring = fj_middle + N_middle
+    fj_pinky = fj_ring + N_ring
+    tot_joints = pub.dofs()
+
+    theta = np.zeros((tot_joints,1))
+    theta_thumb_open[1, :] = -0.1
 
     # Set the numpy printing options (as not to be overly confusing).
     # This is entirely to make it look pretty (in my opinion).
@@ -182,59 +192,60 @@ if __name__ == "__main__":
     theta_ti = np.array([[1.51], [0], [0.11], [0.18],
                          [0],[0.87],[1.42],
                          [0],[0],[0], 
-                         [0], [0], [0], [0],
+                         [0], [0], [0],
                          [0], [0], [0]])
 
     p_index_ti = np.zeros((3,1))
     p_thumb_ti = np.zeros((3,1))
     R_index_ti = np.identity(3)
     R_thumb_ti = np.identity(3)
-    kin_index.fkin(theta_ti[N_thumb:N_thumb+N_index], p_index_ti, R_index_ti)
-    kin_thumb.fkin(theta_ti[0:N_thumb], p_thumb_ti, R_thumb_ti)
+    kin_index.fkin(theta_ti[fj_index:fj_middle], p_index_ti, R_index_ti)
+    kin_thumb.fkin(theta_ti[fj_thumb:fj_index], p_thumb_ti, R_thumb_ti)
 
     # for number 8
     theta_tm = np.array([[1.12], [-0.38], [0.27], [0.31],\
                          [0], [0], [0],
                          [0], [1.31], [1.16],
-                         [0], [0], [0], [0],
+                         [0], [0], [0],
                          [0], [0], [0]])
 
     p_middle_tm = np.zeros((3,1))
     p_thumb_tm = np.zeros((3,1))    
     R_middle_tm = np.identity(3)
     R_thumb_tm = np.identity(3)
-    kin_middle.fkin(theta_tm, p_middle_tm, R_middle_tm)
-    kin_thumb.fkin(theta_tm, p_thumb_tm, R_thumb_tm)
+    kin_middle.fkin(theta_tm[fj_middle:fj_ring], p_middle_tm, R_middle_tm)
+    kin_thumb.fkin(theta_tm[fj_thumb:fj_index], p_thumb_tm, R_thumb_tm)
 
-    print("R_middle_tm: ", R_middle_tm)
 
     # for number 7
     theta_tr = np.array([[1.19], [-0.91], [0.20], [0.30], \
                          [0], [0], [0],
                          [0], [0], [0],
-                         [0], [0.42], [1.33], [1.09],
+                         [0.42], [1.33], [1.09],
                          [0], [0], [0]])
 
     p_ring_tr = np.zeros((3,1))
     p_thumb_tr = np.zeros((3,1))
     R_ring_tr = np.identity(3)
     R_thumb_tr = np.identity(3)
-    kin_ring.fkin(theta_tr, p_ring_tr, R_ring_tr)
-    kin_thumb.fkin(theta_tr, p_thumb_tr, R_thumb_tr)
+    kin_ring.fkin(theta_tr[fj_ring:fj_pinky], p_ring_tr, R_ring_tr)
+    kin_thumb.fkin(theta_tr[fj_thumb:fj_index], p_thumb_tr, R_thumb_tr)
+
+
 
     # for number 6
     theta_tp = np.array([[1.41], [-1.07], [0.14], [0.13], \
                          [0], [0], [0],
                          [0], [0], [0],
-                         [0], [0], [0], [0],
+                         [0], [0], [0],
                          [0.69], [1.17], [1.03]])
 
     p_pinky_tp = np.zeros((3,1))
     p_thumb_tp = np.zeros((3,1))
     R_pinky_tp = np.identity(3)
     R_thumb_tp = np.identity(3)
-    kin_pinky.fkin(theta_tp, p_pinky_tp, R_pinky_tp)
-    kin_thumb.fkin(theta_tp, p_thumb_tp, R_thumb_tp)
+    kin_pinky.fkin(theta_tp[fj_pinky:tot_joints], p_pinky_tp, R_pinky_tp)
+    kin_thumb.fkin(theta_tp[fj_thumb:fj_index], p_thumb_tp, R_thumb_tp)
 
 
     # Open hand positions
@@ -245,8 +256,10 @@ if __name__ == "__main__":
     kin_ring.fkin(theta_ring_open, p_ring_open, R_ring_open)
     kin_pinky.fkin(theta_pinky_open, p_pinky_open, R_pinky_open)
 
+    print("R_pinky_tp: ", R_pinky_tp)
+    print("R_pinky_open: ", R_pinky_open)
 
-    theta = np.vstack((theta_thumb_open, theta_index_open, theta_middle_open, theta_ring_open, theta_pinky_open[1:N_pinky]))
+    theta = np.vstack((theta_thumb_open, theta_index_open, theta_middle_open, theta_ring_open, theta_pinky_open))
 
 
     # finger planes
@@ -296,13 +309,11 @@ if __name__ == "__main__":
     while not rospy.is_shutdown():
         print(t)
 
-        th_thumb = theta[0:N_thumb, :]
-        th_index = theta[N_thumb:N_thumb + N_index, :]
-        th_middle = theta[N_thumb + N_index:N_thumb + N_index + N_middle, :]
-        th_ring = theta[N_thumb + N_index + N_middle:N_thumb + N_index + N_middle + N_ring, :]
-        th_pinky = np.zeros((4,1))
-        th_pinky[0,:] = theta[10,:]
-        th_pinky[1:,:] = theta[14:17,:]
+        th_thumb = theta[fj_thumb:fj_index, :]
+        th_index = theta[fj_index:fj_middle, :]
+        th_middle = theta[fj_middle:fj_ring, :]
+        th_ring = theta[fj_ring:fj_pinky, :]
+        th_pinky = theta[fj_pinky:tot_joints]
 
         # Update the locations of each tip
         kin_thumb.fkin(th_thumb, p_thumb, R_thumb)
@@ -311,7 +322,7 @@ if __name__ == "__main__":
         kin_ring.fkin(th_ring, p_ring, R_ring)
         kin_pinky.fkin(th_pinky, p_pinky, R_pinky)
 
-        print("th middle: ",th_middle)
+        # print("th middle: ",th_middle)
         # print("p goal: ", p_pinky_open)
 
         kin_thumb.Jac(th_thumb, J_thumb)
@@ -337,7 +348,7 @@ if __name__ == "__main__":
         h_free = 2
         
 
-        desiredNum = 8 #we can change this later to incorporate the thumb position
+        desiredNum = 6 #we can change this later to incorporate the thumb position
         handState = h_close
        
             
@@ -419,12 +430,8 @@ if __name__ == "__main__":
         th_pinky = theta_finger(th_pinky, vd_pinky, wd_pinky, J_pinky, e_pinky, lam)
 
 
-        if desiredNum ==6:
-            theta = np.vstack((th_thumb, th_index, th_middle, th_ring[1:N_ring], th_pinky))
-        else:
-            #print("thumb: ",np.shape(theta_thumb))
-            #print("index: ",np.shape(th_index))
-            theta = np.vstack((th_thumb, th_index, th_middle, th_ring, th_pinky[1:N_pinky]))
+
+        theta = np.vstack((th_thumb, th_index, th_middle, th_ring, th_pinky))
 
        # print(theta)
         pub.send(theta)
