@@ -256,8 +256,9 @@ if __name__ == "__main__":
     kin_ring.fkin(theta_ring_open, p_ring_open, R_ring_open)
     kin_pinky.fkin(theta_pinky_open, p_pinky_open, R_pinky_open)
 
-    print("R_pinky_tp: ", R_pinky_tp)
-    print("R_pinky_open: ", R_pinky_open)
+    print("R_thumb_tm: ", R_thumb_tm)
+    print("R_thumb_tr: ", R_thumb_tr)
+    print("R_thumb_tp: ", R_thumb_tp)
 
     theta = np.vstack((theta_thumb_open, theta_index_open, theta_middle_open, theta_ring_open, theta_pinky_open))
 
@@ -416,7 +417,7 @@ if __name__ == "__main__":
         (pd_ring, vd_ring) = desired(t, total_t, p_ring_open, p_ring_goal)
         (pd_pinky, vd_pinky) = desired(t, total_t, p_pinky_open, p_pinky_goal)
 
-        (Rd_thumb, wd_thumb) = (Rd_thumb, np.zeros((3,1)))
+        (Rd_thumb, wd_thumb) = rot_path(t, total_t, desiredNum, 'thumb', R_thumb_open)
         (Rd_index, wd_index) =  rot_path(t, total_t, desiredNum, 'index', R_index_open)
         (Rd_middle, wd_middle) = rot_path(t, total_t, desiredNum, 'middle', R_middle_open)
         (Rd_ring, wd_ring) = rot_path(t, total_t, desiredNum, 'ring', R_ring_open)

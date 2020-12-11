@@ -8,24 +8,6 @@
 import kdl_parser_py.urdf as kdlp
 import PyKDL              as kdl
 
-#
-#  Basic Rotation Matrices
-#
-def Rx(theta):
-    return np.array([[ 1, 0            , 0            ],
-                     [ 0, np.cos(theta),-np.sin(theta)],
-                     [ 0, np.sin(theta), np.cos(theta)]])
-
-def Ry(theta):
-    return np.array([[ np.cos(theta), 0, np.sin(theta)],
-                     [ 0            , 1, 0            ],
-                     [-np.sin(theta), 0, np.cos(theta)]])
-
-def Rz(theta):
-    return np.array([[ np.cos(theta), -np.sin(theta), 0 ],
-                     [ np.sin(theta), np.cos(theta) , 0 ],
-                     [ 0            , 0             , 1 ]])
-
 
 #
 #  Kinematics Class Definition

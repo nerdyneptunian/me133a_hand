@@ -67,27 +67,45 @@ def gen_vel(t, tf, p0, pgoal):
     return vel
 
 def rot_path(t, tf, desiredNum, finger, R0):
-    alpha = 0
+    (ax, ay, az) = (0, 0, 0)
     if desiredNum == 9 and finger == 'index':
-        alpha = 2.09
+        ax = 2.09
         
     elif desiredNum == 8 and finger == 'middle':
-        alpha = 2.27
+        ax = 2.27
 
     #TO DO: FIND ROTATIONS FOR RING AND PINKY
     elif desiredNum == 7 and finger == 'ring':
-        alpha = 2.64
+        ax = 2.64
 
     elif desiredNum == 6 and finger == 'pinky':
-        alpha = 2.64
+        ax = 2.64
+
+    elif finger == 'thumb':
+        if desiredNum == 9:
+            (ax, ay, az) = (0.3, 0.4, 1.3)
+
+        elif desiredNum == 8:
+            #TODO
+            (ax, ay, az) = (0.85, 0.6, 0.75)
+
+        elif desiredNum == 7:
+            #TODO
+            (ax, ay, az) = (1.4, 0.5, 0.5)
+
+        elif desiredNum == 6:
+            #TOOD
+            (ax, ay, az) = (1.45, 0.55, 0.6)
+
 
     elif desiredNum not in [6, 7, 8, 9]:
         print("Invalid Number Entered")
 
-    Rd = R0 @ Rx(alpha * t/tf)
-    wd = vec(alpha/tf, 0, 0)
+    Rd = R0 @ Rx(ax * t/tf) @ Ry(ay * t/tf) @ Rz(az *t/tf)
+    wd = vec(ax, ay, az)/tf
 
     return (Rd, wd)
+
 
 
 
