@@ -10,6 +10,8 @@ import rospy
 import numpy as np
 from numpy.linalg import inv
 
+import math as m
+
 from hw6code.kinematics import Kinematics #Check if this library actually exists or if you need to make a setup.py for it
 
 from sensor_msgs.msg   import JointState
@@ -58,6 +60,8 @@ def etip(p, pd, R, Rd):
     eR  = np.matrix.transpose(np.atleast_2d(eR1))
     return np.vstack((ep,eR))  
     # return ep
+
+
 
 #
 #  Joint States Publisher
@@ -258,39 +262,50 @@ if __name__ == "__main__":
     kin_ring.fkin(theta_ring_open, p_ring_open, R_ring_open)
     kin_pinky.fkin(theta_pinky_open, p_pinky_open, R_pinky_open)
 
-    print("R_thumb_tm: ", R_thumb_tm)
-    print("R_thumb_tr: ", R_thumb_tr)
-    print("R_thumb_tp: ", R_thumb_tp)
-
-    theta = np.vstack((theta_thumb_open, theta_index_open, theta_middle_open, theta_ring_open, theta_pinky_open))
-
+    theta_open = np.vstack((theta_thumb_open, theta_index_open, theta_middle_open, theta_ring_open, theta_pinky_open))
 
     # finger planes
     # we can make these more robust later with actual positions, but I 
     # got most of these from the rviz
 
-    index_plane = plane_vec(p_index_open, vec(-0.0328, -0.0531, 0.1), \
-        vec(-0.0299, -0.0556, 0.0844))
-    middle_plane = plane_vec(p_middle_open, vec(-0.009, -0.07, 0.101), \
-        vec(-0.011, -0.0745, 0.0692))
-    ring_plane = plane_vec(p_ring_open, vec(0.0253, -0.0795, 0.0694), \
-        vec(0.0145, -0.0804, 0.0247))
-    pinky_plane = plane_vec(p_pinky_open, vec(0.0441, -0.0613, 0.0542), \
-        vec(0.0284, -0.0656, 0.0137))
+    # index_plane = plane_vec(p_index_open, vec(-0.0328, -0.0531, 0.1), \
+    #     vec(-0.0299, -0.0556, 0.0844))
+    # middle_plane = plane_vec(p_middle_open, vec(-0.009, -0.07, 0.101), \
+    #     vec(-0.011, -0.0745, 0.0692))
+    # ring_plane = plane_vec(p_ring_open, vec(0.0253, -0.0795, 0.0694), \
+    #     vec(0.0145, -0.0804, 0.0247))
+    # pinky_plane = plane_vec(p_pinky_open, vec(0.0441, -0.0613, 0.0542), \
+    #     vec(0.0284, -0.0656, 0.0137))
 
 
+# Determining Start Theta (For Non-Gui Application)
+    h_open = 0
+    h_close = 1
+    h_free = 2        
 
-# For the initial desired, head to the starting position (t=0).
-# Clear the velocities, just to be sure.
+    desiredNum = 6 #we can change this later to incorporate the thumb position
+    handState = 0
 
+    if handState == 1:
+        if desiredNum == 9:
+            theta = theta_ti
+        elif desiredNum == 8:
+            theta = theta_tm
+        elif desiredNum == 7:
+            theta = theta_tr
+        elif desiredNum == 6:
+            theta = theta_tp
 
-# Should add the -1 trick when we have the opportunity
+    else:
+        theta = theta_open
 
-# initializing the desired velocities and positions
+# Initializing the desired velocities and positions
     t = 0.0
+    t_sub = t
     lam = 0.1/dt
-    total_t = 1.0
-    tf = total_t
+    total_t = 1
+    tf = 1.0
+    step_no = 1
 
     (pd_thumb, vd_thumb) = desired(0, total_t, p_thumb_open, p_thumb_open)
     (pd_index, vd_index) = desired(0, total_t, p_index_open, p_index_open)
@@ -304,6 +319,20 @@ if __name__ == "__main__":
     Rd_ring = R_ring_open
     Rd_pinky = R_pinky_open
 
+    p_t0 = np.zeros((3, 1))
+    p_i0 = np.zeros((3, 1)) 
+    p_m0 = np.zeros((3, 1))
+    p_r0 = np.zeros((3, 1))
+    p_p0 = np.zeros((3, 1))
+
+    R_t0 = np.identity(3)
+    R_i0 = np.identity(3)
+    R_m0 = np.identity(3)
+    R_r0 = np.identity(3)
+    R_p0 = np.identity(3)
+
+
+    num_changed = True
 
     #
     #   Main Time Loop
@@ -345,24 +374,23 @@ if __name__ == "__main__":
         # print("Error Index: ", e_index)
 
         t+= dt
+        t_sub+= dt
 
-        h_open = 0
-        h_close = 1
-        h_free = 2
-        
-
-        desiredNum = 6 #we can change this later to incorporate the thumb position
-        handState = h_close
+        desiredNumNew = 6 + m.floor((step_no - 1)/2)
+        handStateNew = (step_no) % 2
        
             
-        #   if condition open vs. closed changed:
-        # check if we need to do any motion- aka if close or free
+        if desiredNum != desiredNumNew or handState != handStateNew:
+            kin_thumb.fkin(th_thumb, p_t0, R_t0)
+            kin_index.fkin(th_index, p_i0, R_i0)
+            kin_middle.fkin(th_middle, p_m0, R_m0)
+            kin_ring.fkin(th_ring, p_r0, R_r0)
+            kin_pinky.fkin(th_pinky, p_p0, R_p0)
+            print("Initial Conditions logged! Number: ", desiredNumNew, " Hand State: ", handStateNew)
+            desiredNum = desiredNumNew
+            handState = handStateNew
         
         if handState == h_free:
-            # p_i0 = p_index # i think we may want to make these open instead
-            # p_m0 = p_middle
-            # p_r0 = p_ring
-            # p_p0 = p_pinky
 
             (p_index_goal, R_index_goal) = (p_index_open, R_index_open)
             (p_middle_goal, R_middle_goal) = (p_middle_open, R_middle_open)
@@ -375,13 +403,7 @@ if __name__ == "__main__":
 
 
         else:
-            # # set our initial positions
-            # p_t0 = p_thumb
-            # p_i0 = p_index
-            # p_m0 = p_middle
-            # p_r0 = p_ring
-            # p_p0 = p_pinky
-
+            
             #TBH all the index through pinky fingers are likely going to have p_x0 be open or closed
                 # make the goal to be open positions (need to define these)
             (p_thumb_goal, R_thumb_goal) = (p_thumb_open, R_thumb_open)
@@ -409,22 +431,24 @@ if __name__ == "__main__":
                     (p_thumb_goal, R_thumb_goal) = (p_thumb_tp, R_thumb_tp)
                     (p_pinky_goal, R_pinky_goal) = (p_pinky_tp, R_pinky_tp)
             # because the free doesn't touch the thumb at all, we're going to put it here
-            
+
 
             
         # Now that we have all the goals, we can calculate the desired positions (besides the thumb)
-        (pd_thumb, vd_thumb) = desired(t, total_t, p_thumb_open, p_thumb_goal)
-        (pd_index, vd_index) = desired(t, total_t, p_index_open, p_index_goal) #test with open instead
-        (pd_middle, vd_middle) = desired(t, total_t, p_middle_open, p_middle_goal)
-        (pd_ring, vd_ring) = desired(t, total_t, p_ring_open, p_ring_goal)
-        (pd_pinky, vd_pinky) = desired(t, total_t, p_pinky_open, p_pinky_goal)
+        (pd_thumb, vd_thumb) = desired(t_sub, total_t, p_t0, p_thumb_goal)
+        (pd_index, vd_index) = desired(t_sub, total_t, p_i0, p_index_goal) #test with open instead
+        (pd_middle, vd_middle) = desired(t_sub, total_t, p_m0, p_middle_goal)
+        (pd_ring, vd_ring) = desired(t_sub, total_t, p_r0, p_ring_goal)
+        (pd_pinky, vd_pinky) = desired(t_sub, total_t, p_p0, p_pinky_goal)
 
-        (Rd_thumb, wd_thumb) = rot_path(t, total_t, desiredNum, 'thumb', R_thumb_open)
-        (Rd_index, wd_index) =  rot_path(t, total_t, desiredNum, 'index', R_index_open)
-        (Rd_middle, wd_middle) = rot_path(t, total_t, desiredNum, 'middle', R_middle_open)
-        (Rd_ring, wd_ring) = rot_path(t, total_t, desiredNum, 'ring', R_ring_open)
-        (Rd_pinky, wd_pinky) = rot_path(t, total_t, desiredNum, 'pinky', R_pinky_open)
+        (Rd_thumb, wd_thumb) = rot_path(t_sub, total_t, desiredNum, 'thumb', R_t0, handState)
+        (Rd_index, wd_index) =  rot_path(t_sub, total_t, desiredNum, 'index', R_i0, handState)
+        (Rd_middle, wd_middle) = rot_path(t_sub, total_t, desiredNum, 'middle', R_m0, handState)
+        (Rd_ring, wd_ring) = rot_path(t_sub, total_t, desiredNum, 'ring', R_r0, handState)
+        (Rd_pinky, wd_pinky) = rot_path(t_sub, total_t, desiredNum, 'pinky', R_p0, handState)
 
+        # print('R_thumb_open: ', R_t0)
+        # print('Actual R_thumb: ',  R_thumb)
 
         th_thumb = theta_finger(th_thumb, vd_thumb, wd_thumb, J_thumb, e_thumb, lam, True)
         th_index = theta_finger(th_index, vd_index, wd_index, J_index, e_index, lam)
@@ -442,5 +466,8 @@ if __name__ == "__main__":
         servo.sleep()
         
 
-        if (t >= tf):
+        if (t_sub >= tf):
+            step_no+= 1
+            t_sub = 0
+        if (step_no > 8):
             break

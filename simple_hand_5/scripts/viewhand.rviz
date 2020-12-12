@@ -6,6 +6,7 @@ Panels:
       Expanded:
         - /Global Options1
         - /RobotModel1/Links1
+        - /TF1
         - /TF1/Frames1
       Splitter Ratio: 0.5007752180099487
     Tree Height: 292
@@ -63,157 +64,95 @@ Visualization Manager:
         Expand Link Details: false
         Expand Tree: false
         Link Tree Style: Links in Alphabetic Order
-        cube-back:
+        base_link:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        cube-down:
+        index_1:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        cube-front:
+        index_2:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        cube-left:
+        index_3:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        cube-right:
+        middle_1:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        cube-up:
+        middle_2:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        handbase:
+        middle_3:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        leftfinger:
+        pinky_1:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        link1:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-        link2:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-        link3:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-        link4:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-        link5:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-        link6:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-        link7:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-        motor1:
+        pinky_2:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        motor2:
+        pinky_3:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        motor3:
+        ring_1:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        motor4:
+        ring_2:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        motor5:
+        ring_3:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        motor6:
+        ring_pinky_extra:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        motor7:
+        t1_p_r2:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        thumb_1:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        mount1:
+        thumb_2:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        mount2:
+        thumb_3:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        mount3:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        mount4:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        mount5:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        mount6:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        palm:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        rightfinger:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        tip:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-        world:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
       Name: RobotModel
       Robot Description: robot_description
       TF Prefix: ""
@@ -225,132 +164,72 @@ Visualization Manager:
       Frame Timeout: 15
       Frames:
         All Enabled: true
-        cube-back:
+        base_link:
           Value: true
-        cube-down:
+        index_1:
           Value: true
-        cube-front:
+        index_2:
           Value: true
-        cube-left:
+        index_3:
           Value: true
-        cube-right:
+        middle_1:
           Value: true
-        cube-up:
+        middle_2:
           Value: true
-        handbase:
+        middle_3:
           Value: true
-        leftfinger:
+        pinky_1:
           Value: true
-        link1:
+        pinky_2:
           Value: true
-        link2:
+        pinky_3:
           Value: true
-        link3:
+        ring_1:
           Value: true
-        link4:
+        ring_2:
           Value: true
-        link5:
+        ring_3:
           Value: true
-        link6:
+        ring_pinky_extra:
           Value: true
-        link7:
+        t1_p_r2:
           Value: true
-        motor1:
+        thumb_1:
           Value: true
-        motor2:
+        thumb_2:
           Value: true
-        motor3:
-          Value: true
-        motor4:
-          Value: true
-        motor5:
-          Value: true
-        motor6:
-          Value: true
-        motor7:
-          Value: true
-        mount1:
-          Value: true
-        mount2:
-          Value: true
-        mount3:
-          Value: true
-        mount4:
-          Value: true
-        mount5:
-          Value: true
-        mount6:
-          Value: true
-        palm:
-          Value: true
-        rightfinger:
-          Value: true
-        tip:
-          Value: true
-        world:
+        thumb_3:
           Value: true
       Marker Alpha: 1
-      Marker Scale: 0.5
+      Marker Scale: 0.25
       Name: TF
       Show Arrows: false
       Show Axes: true
       Show Names: false
       Tree:
-        world:
-          link1:
-            link2:
-              link3:
-                link4:
-                  link5:
-                    link6:
-                      link7:
-                        handbase:
-                          {}
-                        leftfinger:
-                          {}
-                        palm:
-                          {}
-                        rightfinger:
-                          {}
-                        tip:
-                          cube-back:
-                            {}
-                          cube-down:
-                            {}
-                          cube-front:
-                            {}
-                          cube-left:
-                            {}
-                          cube-right:
-                            {}
-                          cube-up:
-                            {}
-                      motor7:
-                        {}
-                    motor6:
-                      {}
-                    mount6:
-                      {}
-                  motor5:
-                    {}
-                  mount5:
-                    {}
-                motor4:
-                  {}
-                mount4:
-                  {}
-              motor3:
+        base_link:
+          index_1:
+            index_2:
+              index_3:
                 {}
-              mount3:
+          middle_1:
+            middle_2:
+              middle_3:
                 {}
-            motor2:
-              {}
-            mount2:
-              {}
-          motor1:
-            {}
-          mount1:
-            {}
+          ring_pinky_extra:
+            pinky_1:
+              pinky_2:
+                pinky_3:
+                  {}
+            ring_1:
+              ring_2:
+                ring_3:
+                  {}
+          t1_p_r2:
+            thumb_1:
+              thumb_2:
+                thumb_3:
+                  {}
       Update Interval: 0
       Value: true
     - Class: rviz/MarkerArray
@@ -365,7 +244,7 @@ Visualization Manager:
   Global Options:
     Background Color: 48; 48; 48
     Default Light: true
-    Fixed Frame: world
+    Fixed Frame: base_link
     Frame Rate: 15
   Name: root
   Tools:
@@ -389,7 +268,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 1.7391659021377563
+      Distance: 0.3360130786895752
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -397,17 +276,17 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: 0.1284099519252777
-        Y: 0.5152251124382019
-        Z: 0.1539243459701538
+        X: 0.005780545063316822
+        Y: -0.2392401248216629
+        Z: 0.0036071925424039364
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.28539833426475525
+      Pitch: 0.0353984534740448
       Target Frame: <Fixed Frame>
-      Yaw: 0.8904043436050415
+      Yaw: 4.598592758178711
     Saved: ~
 Window Geometry:
   Displays:
@@ -426,4 +305,4 @@ Window Geometry:
     collapsed: false
   Width: 1028
   X: 34
-  Y: 30
+  Y: 6

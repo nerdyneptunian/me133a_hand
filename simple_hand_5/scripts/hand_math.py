@@ -66,7 +66,7 @@ def gen_vel(t, tf, p0, pgoal):
     vel = 6*((p0 - pgoal)*t*(t - tf))/tf**3
     return vel
 
-def rot_path(t, tf, desiredNum, finger, R0):
+def rot_path(t, tf, desiredNum, finger, R0, handState=1):
     (ax, ay, az) = (0, 0, 0)
     if desiredNum == 9 and finger == 'index':
         ax = 2.09
@@ -101,7 +101,12 @@ def rot_path(t, tf, desiredNum, finger, R0):
     elif desiredNum not in [6, 7, 8, 9]:
         print("Invalid Number Entered")
 
-    Rd = R0 @ Rx(ax * t/tf) @ Ry(ay * t/tf) @ Rz(az *t/tf)
+    if handState == 0:
+        (ax, ay, az) = (-ax, -ay, -az)
+        Rd = R0 @ Rz(az * t/tf) @ Ry(ay * t/tf) @ Rx(ax *t/tf)
+
+    else:
+        Rd = R0 @ Rx(ax * t/tf) @ Ry(ay * t/tf) @ Rz(az *t/tf)
     wd = vec(ax, ay, az)/tf
 
     return (Rd, wd)
