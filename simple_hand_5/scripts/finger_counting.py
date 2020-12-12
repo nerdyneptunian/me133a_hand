@@ -62,7 +62,6 @@ def etip(p, pd, R, Rd):
     # return ep
 
 
-
 #
 #  Joint States Publisher
 #
@@ -300,18 +299,18 @@ if __name__ == "__main__":
         theta = theta_open
 
 # Initializing the desired velocities and positions
-    t = 0.0
-    t_sub = t
+    t = 0.0     # Total time the system has been running
+    t_sub = t   # Time the step has been running
     lam = 0.1/dt
-    total_t = 1
-    tf = 1.0
+    tf = 0.5 # Time taken to get from open to closed
+    t_hold = 1.5 # Time to hold fingers in correct position
     step_no = 1
 
-    (pd_thumb, vd_thumb) = desired(0, total_t, p_thumb_open, p_thumb_open)
-    (pd_index, vd_index) = desired(0, total_t, p_index_open, p_index_open)
-    (pd_middle, vd_middle) = desired(0, total_t, p_middle_open, p_middle_open)
-    (pd_ring, vd_ring) = desired(0, total_t, p_ring_open, p_ring_open)
-    (pd_pinky, vd_pinky) = desired(0, total_t, p_pinky_open, p_pinky_open)
+    (pd_thumb, vd_thumb) = desired(0, tf, p_thumb_open, p_thumb_open)
+    (pd_index, vd_index) = desired(0, tf, p_index_open, p_index_open)
+    (pd_middle, vd_middle) = desired(0, tf, p_middle_open, p_middle_open)
+    (pd_ring, vd_ring) = desired(0, tf, p_ring_open, p_ring_open)
+    (pd_pinky, vd_pinky) = desired(0, tf, p_pinky_open, p_pinky_open)
 
     Rd_thumb = R_thumb
     Rd_index = R_index_open
@@ -435,17 +434,31 @@ if __name__ == "__main__":
 
             
         # Now that we have all the goals, we can calculate the desired positions (besides the thumb)
-        (pd_thumb, vd_thumb) = desired(t_sub, total_t, p_t0, p_thumb_goal)
-        (pd_index, vd_index) = desired(t_sub, total_t, p_i0, p_index_goal) #test with open instead
-        (pd_middle, vd_middle) = desired(t_sub, total_t, p_m0, p_middle_goal)
-        (pd_ring, vd_ring) = desired(t_sub, total_t, p_r0, p_ring_goal)
-        (pd_pinky, vd_pinky) = desired(t_sub, total_t, p_p0, p_pinky_goal)
+        if (t_sub < tf):
+            (pd_thumb, vd_thumb) = desired(t_sub, tf, p_t0, p_thumb_goal)
+            (pd_index, vd_index) = desired(t_sub, tf, p_i0, p_index_goal) #test with open instead
+            (pd_middle, vd_middle) = desired(t_sub, tf, p_m0, p_middle_goal)
+            (pd_ring, vd_ring) = desired(t_sub, tf, p_r0, p_ring_goal)
+            (pd_pinky, vd_pinky) = desired(t_sub, tf, p_p0, p_pinky_goal)
 
-        (Rd_thumb, wd_thumb) = rot_path(t_sub, total_t, desiredNum, 'thumb', R_t0, handState)
-        (Rd_index, wd_index) =  rot_path(t_sub, total_t, desiredNum, 'index', R_i0, handState)
-        (Rd_middle, wd_middle) = rot_path(t_sub, total_t, desiredNum, 'middle', R_m0, handState)
-        (Rd_ring, wd_ring) = rot_path(t_sub, total_t, desiredNum, 'ring', R_r0, handState)
-        (Rd_pinky, wd_pinky) = rot_path(t_sub, total_t, desiredNum, 'pinky', R_p0, handState)
+            (Rd_thumb, wd_thumb) = rot_path(t_sub, tf, desiredNum, 'thumb', R_t0, handState)
+            (Rd_index, wd_index) =  rot_path(t_sub, tf, desiredNum, 'index', R_i0, handState)
+            (Rd_middle, wd_middle) = rot_path(t_sub, tf, desiredNum, 'middle', R_m0, handState)
+            (Rd_ring, wd_ring) = rot_path(t_sub, tf, desiredNum, 'ring', R_r0, handState)
+            (Rd_pinky, wd_pinky) = rot_path(t_sub, tf, desiredNum, 'pinky', R_p0, handState)
+
+        elif (t_sub > tf):
+            (pd_thumb, Rd_thumb) = (p_thumb_goal, R_thumb_goal)
+            (pd_index, Rd_index) = (p_index_goal, R_index_goal)
+            (pd_middle, Rd_middle) = (p_middle_goal, R_middle_goal)
+            (pd_ring, Rd_ring) = (p_ring_goal, R_ring_goal)
+            (pd_pinky, Rd_pinky) = (p_pinky_goal, R_pinky_goal)
+
+            (vd_thumb, wd_thumb) = (np.zeros((3,1)), np.zeros((3,1)))
+            (vd_index, wd_index) = (np.zeros((3,1)), np.zeros((3,1)))
+            (vd_middle, wd_middle) = (np.zeros((3,1)), np.zeros((3,1)))
+            (vd_ring, wd_ring) = (np.zeros((3,1)), np.zeros((3,1)))
+            (vd_pinky, wd_pinky) = (np.zeros((3,1)), np.zeros((3,1)))
 
         # print('R_thumb_open: ', R_t0)
         # print('Actual R_thumb: ',  R_thumb)
@@ -466,7 +479,7 @@ if __name__ == "__main__":
         servo.sleep()
         
 
-        if (t_sub >= tf):
+        if (t_sub >= tf+t_hold):
             step_no+= 1
             t_sub = 0
         if (step_no > 8):
