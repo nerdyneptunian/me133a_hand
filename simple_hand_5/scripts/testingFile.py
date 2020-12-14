@@ -48,9 +48,68 @@ def gen_vel(t, tf, p0, pgoal):
 	vel = 6*((p0 - pgoal)*t*(t - tf))/tf**3
 	return vel
 
-print(desired(0.017,2.22,vec(-2,7.3,0.001),vec(2,-0.77,51)))
 
-print(desired_path(0.017,2.22,vec(-2,7.3,0.001),vec(2,-0.77,51)))
+def rotation(t, tf, R0, Rf):
+	R = np.zeros((3,3))
+	for i in range(len(R[1])):
+		for j in range(len(R[1])):
+			R[i,j] =(gen_path(t,tf,R0[i,j],Rf[i,j]))
+	return R
+    
+
+def rot_path(t, tf, desiredNum, finger, R0, handState=1):
+    (ax, ay, az) = (0, 0, 0)
+    if desiredNum == 9 and finger == 'index':
+        ax = 2.09
+        
+    elif desiredNum == 8 and finger == 'middle':
+        ax = 2.27
+
+    #TO DO: FIND ROTATIONS FOR RING AND PINKY
+    elif desiredNum == 7 and finger == 'ring':
+        ax = 2.64
+
+    elif desiredNum == 6 and finger == 'pinky':
+        ax = 2.64
+
+    elif finger == 'thumb':
+        if desiredNum == 9:
+            (ax, ay, az) = (0.3, 0.4, 1.3)
+
+        elif desiredNum == 8:
+            #TODO
+            (ax, ay, az) = (0.85, 0.6, 0.75)
+
+        elif desiredNum == 7:
+            #TODO
+            (ax, ay, az) = (1.4, 0.5, 0.5)
+
+        elif desiredNum == 6:
+            #TOOD
+            (ax, ay, az) = (1.45, 0.55, 0.6)
+
+
+    elif desiredNum not in [6, 7, 8, 9]:
+        print("Invalid Number Entered")
+
+    if handState == 0:
+        (ax, ay, az) = (-ax, -ay, -az)
+        Rd = R0 @ Rz(az * t/tf) @ Ry(ay * t/tf) @ Rx(ax *t/tf)
+
+    else:
+        Rd = R0 @ Rx(ax * t/tf) @ Ry(ay * t/tf) @ Rz(az *t/tf)
+    wd = vec(ax, ay, az)/tf
+
+    return (Rd, wd)
+
+testArray1 = np.array([[[0],[1],[0.7]],[[0.85],[0.6],[-0.5]],[[0.5],[-0.3],[0]]])
+testArray2 = np.array([[[0.8],[1],[-0.2]],[[0.05],[0.56],[-0.25]],[[0.57],[-0.03],[0.1]]])
+
+print(rotation(0,2,testArray1,testArray2))
+
+#print(desired(0.017,2.22,vec(-2,7.3,0.001),vec(2,-0.77,51)))
+
+#print(desired_path(0.017,2.22,vec(-2,7.3,0.001),vec(2,-0.77,51)))
 
 
 
