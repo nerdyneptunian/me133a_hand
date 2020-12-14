@@ -403,8 +403,8 @@ if __name__ == "__main__":
 
         else:
             
-            #TBH all the index through pinky fingers are likely going to have p_x0 be open or closed
-                # make the goal to be open positions (need to define these)
+            
+                # make the goal to be open positions
             (p_thumb_goal, R_thumb_goal) = (p_thumb_open, R_thumb_open)
             (p_index_goal, R_index_goal) = (p_index_open, R_index_open)
             (p_middle_goal, R_middle_goal) = (p_middle_open, R_middle_open)
